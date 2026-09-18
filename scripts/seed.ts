@@ -153,6 +153,19 @@ async function main() {
   console.log(`    ├─ ELEMENT [#${opticalElement.id}] ${opticalElement.keyProduct}`);
   console.log(`    └─ PROCESS [#${algorithmProcess.id}] ${algorithmProcess.keyProduct}`);
 
+  // Глобальные настройки приложения (Этап 6): singleton AppSettings с дефолтными значениями
+  await prisma.appSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      llmProvider: 'cloud',
+      localLlmBaseUrl: 'http://localhost:11434',
+      localLlmModel: 'llama3.1',
+    },
+  });
+  console.log('⚙️  Созданы глобальные настройки приложения (AppSettings, llmProvider=cloud)');
+
   console.log('🎉 База данных успешно заполнена!');
 }
 

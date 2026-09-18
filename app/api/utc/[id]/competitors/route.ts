@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { searchCompetitors, SerperApiError } from '@/lib/serper-client';
-import { callAbacus, AbacusApiError } from '@/lib/abacus-client';
+import { callLLM, LlmApiError } from '@/lib/llm-client';
 import type { CompetitorInfo, CompetitorSearchResult } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -95,7 +95,7 @@ export async function POST(
             `Ответь ТОЛЬКО текстом поискового запроса, без кавычек, без пояснений, одной строкой.`,
         },
       ];
-      const rawQuery = await callAbacus(queryPrompt, { temperature: 0.3, maxTokens: 100 });
+      const rawQuery = await callLLM(queryPrompt, { temperature: 0.3, maxTokens: 100 });
       searchQuery = rawQuery.replace(/^["'«]+|["'»]+$/g, '').split('\n')[0].trim();
       if (!searchQuery) {
         throw new Error('empty');
@@ -173,7 +173,7 @@ export async function POST(
 
     let extracted: { competitors: CompetitorInfo[]; note?: string };
     try {
-      const rawAnswer = await callAbacus(factCheckPrompt, { temperature: 0.2, maxTokens: 1500 });
+      const rawAnswer = await callLLM(factCheckPrompt, { temperature: 0.2, maxTokens: 1500 });
       const parsed = tryParseCompetitorsJson(rawAnswer);
       if (!parsed) {
         return NextResponse.json(
@@ -183,7 +183,7 @@ export async function POST(
       }
       extracted = parsed;
     } catch (error) {
-      if (error instanceof AbacusApiError) {
+      if (error instanceof LlmApiError) {
         return NextResponse.json({ error: error.message }, { status: error.status });
       }
       throw error;

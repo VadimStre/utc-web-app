@@ -79,3 +79,14 @@ model UTCRecord {
 
   @@map("utc_records")
 }
+
+model AppSettings {
+  id              Int      @id @default(1)
+  llmProvider     String   @default("cloud")
+  localLlmBaseUrl String?  @default("http://localhost:11434")
+  localLlmModel   String?  @default("llama3.1")
+  updatedAt       DateTime @updatedAt
+  updatedById     String?
+
+  @@map("app_settings")
+}

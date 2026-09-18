@@ -137,6 +137,16 @@ export interface CompetitorSearchResult {
   note?: string;
 }
 
+// ===== Глобальный переключатель LLM (Этап 6) =====
+
+export type LlmProvider = 'cloud' | 'local';
+
+export interface AppSettingsDTO {
+  llmProvider: LlmProvider;
+  localLlmBaseUrl: string;
+  localLlmModel: string;
+}
+
 // ===== Поиск альтернативных областей применения / новых рынков (Этап 5) =====
 
 export type FeasibilityLevel = 'low' | 'medium' | 'high';

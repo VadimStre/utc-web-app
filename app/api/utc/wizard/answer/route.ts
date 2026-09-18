@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSession, updateSession, isSessionExpired, deleteSession } from '@/lib/wizard-sessions';
-import { callAbacus, AbacusApiError } from '@/lib/abacus-client';
+import { callLLM, LlmApiError } from '@/lib/llm-client';
 import {
   systemPrompt,
   extractionPrompt,
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
             content: `Сформулируй следующий вопрос интервью — по теме: "${fallbackQuestion}". Задай только один вопрос, кратко (2-3 предложения), без нумерации и пояснений.`,
           },
         ];
-        const llmResponse = await callAbacus(llmMessages as any, { temperature: 0.7, maxTokens: 500 });
+        const llmResponse = await callLLM(llmMessages as any, { temperature: 0.7, maxTokens: 500 });
         if (llmResponse && llmResponse.trim() !== '') {
           nextQuestion = llmResponse.trim();
         }
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
         ...wizardSession.messages,
         { role: 'user' as const, content: extractionPrompt },
       ];
-      const llmResponse = await callAbacus(llmMessages as any, { temperature: 0.2, maxTokens: 800 });
+      const llmResponse = await callLLM(llmMessages as any, { temperature: 0.2, maxTokens: 800 });
       extractedData = tryParseExtractedJson(llmResponse);
       if (!extractedData) {
         extractionError =
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       const message =
-        error instanceof AbacusApiError
+        error instanceof LlmApiError
           ? error.message
           : 'AI-мастер недоступен: не удалось извлечь структурированные данные.';
       extractionError = message;
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       totalSteps: TOTAL_QUESTIONS,
     });
   } catch (error) {
-    if (error instanceof AbacusApiError) {
+    if (error instanceof LlmApiError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error('Ошибка обработки ответа AI-мастера:', error);

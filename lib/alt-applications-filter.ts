@@ -3,10 +3,10 @@
 // каждый вариант по 3 критериям (low/medium/high), затем rankAndFilter считает
 // итоговый балл, сортирует и отмечает рекомендованные (топ-треть, но не более 10).
 
-import { callAbacus, AbacusApiError } from '@/lib/abacus-client';
+import { callLLM, LlmApiError } from '@/lib/llm-client';
 import type { AltApplicationVariant, FeasibilityLevel } from '@/lib/types';
 
-export { AbacusApiError };
+export { LlmApiError };
 
 const SCORE_MAP: Record<FeasibilityLevel, number> = { low: 1, medium: 2, high: 3 };
 
@@ -112,10 +112,10 @@ export async function scoreVariants(variants: RawVariant[]): Promise<VariantScor
     },
   ];
 
-  const rawAnswer = await callAbacus(prompt, { temperature: 0.3, maxTokens: 2500 });
+  const rawAnswer = await callLLM(prompt, { temperature: 0.3, maxTokens: 2500 });
   const parsed = tryParseScoresJson(rawAnswer);
   if (!parsed) {
-    throw new AbacusApiError('AI-оценщик вернул некорректный формат ответа при отборе вариантов.', 502);
+    throw new LlmApiError('AI-оценщик вернул некорректный формат ответа при отборе вариантов.', 502);
   }
   return parsed;
 }

@@ -28,6 +28,7 @@ import {
   UserPlus,
   LogOut,
   Sparkles,
+  Settings,
 } from 'lucide-react';
 
 interface PaginationData {
@@ -360,6 +361,14 @@ export default function HomePage() {
                       Создать УТК с помощью AI-мастера
                     </Link>
                   </Button>
+                  {isAdmin && (
+                    <Button variant="outline" asChild>
+                      <Link href="/admin/settings">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Настройки LLM
+                      </Link>
+                    </Button>
+                  )}
                 </>
               ) : (
                 <>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { callAbacus, AbacusApiError } from '@/lib/abacus-client';
+import { callLLM, LlmApiError } from '@/lib/llm-client';
 import { buildAltApplicationsPrompt } from '@/lib/alt-applications-prompt';
 import { scoreVariants, rankAndFilter, type RawVariant } from '@/lib/alt-applications-filter';
 import type { AltApplicationsNewFunction, AltApplicationsResult } from '@/lib/types';
@@ -78,7 +78,7 @@ export async function POST(
 
     let parsed: ParsedAltApplications;
     try {
-      const rawAnswer = await callAbacus(
+      const rawAnswer = await callLLM(
         [{ role: 'user', content: prompt }],
         { temperature: 0.7, maxTokens: 2500 }
       );
@@ -91,7 +91,7 @@ export async function POST(
       }
       parsed = result;
     } catch (error) {
-      if (error instanceof AbacusApiError) {
+      if (error instanceof LlmApiError) {
         return NextResponse.json({ error: error.message }, { status: error.status });
       }
       throw error;
@@ -129,7 +129,7 @@ export async function POST(
       const scores = await scoreVariants(rawVariants);
       allVariantsRanked = rankAndFilter(rawVariants, scores);
     } catch (error) {
-      if (error instanceof AbacusApiError) {
+      if (error instanceof LlmApiError) {
         // Оценка не удалась, но исходные варианты уже получены — возвращаем их без ранжирования,
         // чтобы не терять результат первого (более дорогого) запроса.
         allVariantsRanked = rawVariants.map((v) => ({
