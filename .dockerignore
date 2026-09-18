@@ -1,0 +1,8 @@
+node_modules
+.next
+.build
+.git
+tsconfig.tsbuildinfo
+npm-debug.log
+yarn-error.log
+.env

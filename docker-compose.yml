@@ -1,0 +1,52 @@
+# ============================================================
+# docker-compose для локального запуска приложения "База данных УТК"
+#
+# Запуск одной командой:
+#   docker compose up --build
+#
+# После старта откройте в браузере:  http://localhost:3000
+#
+# Остановка:            docker compose down
+# Остановка + удаление
+# данных базы:          docker compose down -v
+# ============================================================
+
+services:
+  # ---- База данных PostgreSQL ----
+  db:
+    image: postgres:16
+    container_name: utc_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: utc_user
+      POSTGRES_PASSWORD: utc_password
+      POSTGRES_DB: utc_db
+    ports:
+      # Проброс наружу (можно подключаться из pgAdmin/DBeaver на localhost:5432)
+      - "5432:5432"
+    volumes:
+      - utc_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U utc_user -d utc_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---- Веб-приложение (Next.js + Prisma) ----
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: utc_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Внутри docker-сети хост базы = имя сервиса "db"
+      DATABASE_URL: "postgresql://utc_user:utc_password@db:5432/utc_db?connect_timeout=15"
+    ports:
+      - "3000:3000"
+
+volumes:
+  utc_pgdata:

@@ -1,0 +1,43 @@
+
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native"]
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model UTCRecord {
+  id          Int      @id @default(autoincrement())
+  
+  // 1. Организация, ХК - полное наименование организации
+  organization String
+  
+  // 2. Передовой продукт организации, ключевой продукт/процесс, превосходящие конкурентов
+  keyProduct String
+  
+  // 3. Назначение (главная функция) Продукта и объект приложения
+  purpose String
+  
+  // 4. Категории объектов, в отношении которых может применяться указанная функция
+  categories String
+  
+  // 5. Принцип действия (используемый физический, химический процесс)
+  principle String
+  
+  // 6. ПРЕИМУЩЕСТВА, значения Ключевых (отличительных) характеристик
+  advantages String
+  
+  // 7. Владелец УТК (Организация, должность, контакты)
+  owner String
+  
+  // 8. Формулировка УТК
+  formulation String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("utc_records")
+}
