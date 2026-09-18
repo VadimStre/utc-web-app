@@ -27,6 +27,7 @@ import {
   LogIn,
   UserPlus,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 
 interface PaginationData {
@@ -352,6 +353,12 @@ export default function HomePage() {
                   <Button onClick={() => setShowCreateForm(true)} className="bg-primary hover:bg-primary/90">
                     <Plus className="h-4 w-4 mr-2" />
                     Создать УТК
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/wizard">
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Создать УТК с помощью AI-мастера
+                    </Link>
                   </Button>
                 </>
               ) : (

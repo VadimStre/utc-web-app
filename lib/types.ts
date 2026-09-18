@@ -76,3 +76,47 @@ export const UTC_NODE_TYPE_LABELS: Record<UtcNodeType, string> = {
   ELEMENT: "Ключевой элемент",
   PROCESS: "Ключевой процесс",
 };
+
+// ===== AI-мастер ввода УТК (Этап 3) =====
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ExtractedUtcData {
+  organization: string;
+  keyProduct: string;
+  purpose: string;
+  categories: string;
+  principle: string;
+  advantages: string;
+  owner: string;
+  formulation: string;
+  customerProblem: string;
+  targetIndustry: string;
+}
+
+export interface WizardSession {
+  id: string;
+  userId: string;
+  createdAt: number;
+  messages: ChatMessage[];
+  extractedData: Partial<ExtractedUtcData>;
+  // Номер текущего вопроса (0-based индекс в lib/wizard-prompts.ts -> questions)
+  currentStep: number;
+  isComplete: boolean;
+}
+
+export const EXTRACTED_FIELD_LABELS: Record<keyof ExtractedUtcData, string> = {
+  organization: "1. Организация, ХК",
+  keyProduct: "2. Передовой продукт",
+  purpose: "3. Назначение (функция) и объект приложения",
+  categories: "4. Категории объектов",
+  principle: "5. Принцип действия",
+  advantages: "6. Преимущества (ключевые характеристики)",
+  owner: "7. Владелец УТК",
+  formulation: "8. Формулировка УТК",
+  customerProblem: "9. Главная проблема (потребность) Покупателя",
+  targetIndustry: "10. Целевая отрасль",
+};
