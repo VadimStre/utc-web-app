@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { UTCFormData, UTC_FIELD_LABELS, UTC_EXAMPLES } from '@/lib/types';
+import { UTCFormData, UTC_FIELD_LABELS, UTC_EXAMPLES, UtcNodeType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,9 +14,29 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Save, X, HelpCircle, Lightbulb } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+
+const EMPTY_FORM: UTCFormData = {
+  organization: '',
+  keyProduct: '',
+  purpose: '',
+  categories: '',
+  principle: '',
+  advantages: '',
+  owner: '',
+  formulation: '',
+  nodeType: 'ELEMENT',
+  decompositionCharacteristic: '',
+};
 
 interface UTCFormProps {
   open: boolean;
@@ -24,19 +44,22 @@ interface UTCFormProps {
   onSubmit: (data: UTCFormData) => void;
   initialData?: UTCFormData | null;
   isEditing?: boolean;
+  // Режим добавления дочернего узла декомпозиции (Этап 2): показывает
+  // дополнительные поля nodeType и decompositionCharacteristic.
+  isChildMode?: boolean;
+  parentLabel?: string;
 }
 
-export function UTCForm({ open, onClose, onSubmit, initialData, isEditing = false }: UTCFormProps) {
-  const [formData, setFormData] = useState<UTCFormData>({
-    organization: '',
-    keyProduct: '',
-    purpose: '',
-    categories: '',
-    principle: '',
-    advantages: '',
-    owner: '',
-    formulation: '',
-  });
+export function UTCForm({
+  open,
+  onClose,
+  onSubmit,
+  initialData,
+  isEditing = false,
+  isChildMode = false,
+  parentLabel,
+}: UTCFormProps) {
+  const [formData, setFormData] = useState<UTCFormData>({ ...EMPTY_FORM });
 
   const [showGuidance, setShowGuidance] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -53,19 +76,12 @@ export function UTCForm({ open, onClose, onSubmit, initialData, isEditing = fals
         advantages: initialData.advantages || '',
         owner: initialData.owner || '',
         formulation: initialData.formulation || '',
+        nodeType: initialData.nodeType || 'ELEMENT',
+        decompositionCharacteristic: initialData.decompositionCharacteristic || '',
       });
     } else {
       // Сброс формы если initialData пустые (режим создания)
-      setFormData({
-        organization: '',
-        keyProduct: '',
-        purpose: '',
-        categories: '',
-        principle: '',
-        advantages: '',
-        owner: '',
-        formulation: '',
-      });
+      setFormData({ ...EMPTY_FORM });
     }
     // Сброс ошибок при смене режима
     setErrors({});
@@ -81,8 +97,9 @@ export function UTCForm({ open, onClose, onSubmit, initialData, isEditing = fals
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    Object.entries(formData).forEach(([field, value]) => {
-      if (!value.trim()) {
+    (Object.keys(UTC_FIELD_LABELS) as (keyof typeof UTC_FIELD_LABELS)[]).forEach((field) => {
+      const value = formData[field];
+      if (!value || !value.trim()) {
         newErrors[field] = 'Это поле обязательно для заполнения';
       }
     });
@@ -117,21 +134,12 @@ export function UTCForm({ open, onClose, onSubmit, initialData, isEditing = fals
   };
 
   const handleClose = () => {
-    setFormData({
-      organization: '',
-      keyProduct: '',
-      purpose: '',
-      categories: '',
-      principle: '',
-      advantages: '',
-      owner: '',
-      formulation: '',
-    });
+    setFormData({ ...EMPTY_FORM });
     setErrors({});
     onClose();
   };
 
-  const fillExample = (field: keyof UTCFormData) => {
+  const fillExample = (field: keyof typeof UTC_EXAMPLES) => {
     const example = UTC_EXAMPLES[field];
     handleChange(field, example);
   };
@@ -147,14 +155,25 @@ export function UTCForm({ open, onClose, onSubmit, initialData, isEditing = fals
     formulation: "Краткая технически точная формулировка УТК без рекламных слов",
   };
 
+  const titleText = isChildMode
+    ? 'Добавление ключевого элемента/процесса'
+    : isEditing
+      ? 'Редактирование записи УТК'
+      : 'Создание новой записи УТК';
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-primary" />
-            {isEditing ? 'Редактирование записи УТК' : 'Создание новой записи УТК'}
+            {titleText}
           </DialogTitle>
+          {isChildMode && parentLabel && (
+            <p className="text-sm text-muted-foreground">
+              Родительский узел: <span className="font-medium">{parentLabel}</span>
+            </p>
+          )}
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -182,9 +201,42 @@ export function UTCForm({ open, onClose, onSubmit, initialData, isEditing = fals
             </Card>
           )}
 
+          {isChildMode && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-4 bg-muted/20">
+              <div className="space-y-2">
+                <Label htmlFor="nodeType" className="text-sm font-medium">
+                  Тип узла декомпозиции
+                </Label>
+                <Select
+                  value={formData.nodeType || 'ELEMENT'}
+                  onValueChange={(value) => handleChange('nodeType', value as UtcNodeType)}
+                >
+                  <SelectTrigger id="nodeType">
+                    <SelectValue placeholder="Выберите тип" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ELEMENT">Ключевой элемент</SelectItem>
+                    <SelectItem value="PROCESS">Ключевой процесс</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="decompositionCharacteristic" className="text-sm font-medium">
+                  За счёт какого ключевого элемента/процесса достигнута характеристика?
+                </Label>
+                <Input
+                  id="decompositionCharacteristic"
+                  value={formData.decompositionCharacteristic || ''}
+                  onChange={(e) => handleChange('decompositionCharacteristic', e.target.value)}
+                  placeholder="Например: за счёт адаптивной оптической системы"
+                />
+              </div>
+            </div>
+          )}
+
           {Object.entries(UTC_FIELD_LABELS).map(([field, label]) => {
             const isTextArea = ['purpose', 'categories', 'principle', 'advantages', 'formulation'].includes(field);
-            const fieldKey = field as keyof UTCFormData;
+            const fieldKey = field as keyof typeof UTC_FIELD_LABELS;
             
             return (
               <div key={field} className="space-y-2">
@@ -242,7 +294,7 @@ export function UTCForm({ open, onClose, onSubmit, initialData, isEditing = fals
             </Button>
             <Button type="submit" className="bg-primary hover:bg-primary/90">
               <Save className="h-4 w-4 mr-2" />
-              {isEditing ? 'Сохранить изменения' : 'Создать запись'}
+              {isChildMode ? 'Добавить узел' : isEditing ? 'Сохранить изменения' : 'Создать запись'}
             </Button>
           </DialogFooter>
         </form>

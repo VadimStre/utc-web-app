@@ -96,13 +96,63 @@ async function main() {
   ];
 
   // Создаем записи (без ownerId — общие/системные записи)
+  const createdRecords: { id: number; keyProduct: string }[] = [];
   for (const record of sampleRecords) {
-    await prisma.uTCRecord.create({
+    const created = await prisma.uTCRecord.create({
       data: record,
     });
+    createdRecords.push({ id: created.id, keyProduct: created.keyProduct });
   }
 
   console.log(`✅ Создано ${sampleRecords.length} тестовых записей УТК`);
+
+  // Иерархия декомпозиции (Этап 2): делаем лазерный микроскоп (первая запись) корневым PRODUCT
+  // и добавляем ему два дочерних узла — оптическую систему (ELEMENT) и алгоритм обработки (PROCESS),
+  // аналогично примерам таблиц 1-3 из методички (МР.docx).
+  const rootProduct = createdRecords[0]; // Лазерный микроскоп МИМ-340
+
+  await prisma.uTCRecord.update({
+    where: { id: rootProduct.id },
+    data: { nodeType: 'PRODUCT', parentId: null },
+  });
+
+  const opticalElement = await prisma.uTCRecord.create({
+    data: {
+      organization: "ООО 'Инновационные Оптические Системы'",
+      keyProduct: "Адаптивная оптическая система с компенсацией волнового фронта",
+      purpose: "Компенсация оптических аберраций для достижения субдифракционного разрешения микроскопа",
+      categories: "Оптические модули прецизионных микроскопов и телескопов",
+      principle: "Деформируемое зеркало с датчиком волнового фронта Шака-Гартмана и системой обратной связи в реальном времени",
+      advantages: "Компенсация аберраций до λ/20, время отклика системы коррекции менее 1мс",
+      owner: "Петров П.П., главный конструктор, +7(495)123-45-67, petrov@optics-systems.ru",
+      formulation: "Адаптивная оптическая система реального времени для субдифракционной микроскопии",
+      nodeType: 'ELEMENT',
+      parentId: rootProduct.id,
+      decompositionCharacteristic: "За счёт разрешающей способности менее 100нм (ключевая характеристика Продукта)",
+    },
+  });
+
+  const algorithmProcess = await prisma.uTCRecord.create({
+    data: {
+      organization: "НИИ Цифровых Технологий",
+      keyProduct: "Алгоритм преобразования интерференционных сигналов в реальном времени с точностью до 0.1нм",
+      purpose: "Восстановление изображения наноструктуры из искажённого интерференционного сигнала в реальном времени",
+      categories: "Программно-алгоритмическое обеспечение прецизионных оптических систем",
+      principle: "Быстрое преобразование Фурье с адаптивной фильтрацией шумов и машинным обучением для распознавания образов интерференционных картин",
+      advantages: "Точность восстановления сигнала до 0.1нм, время обработки кадра менее 5мс",
+      owner: "Сидоров С.С., ведущий программист, +7(812)987-65-43, sidorov@digital-tech.ru",
+      formulation: "Алгоритм высокоточного преобразования интерференционных сигналов с машинным обучением для микроскопии реального времени",
+      nodeType: 'PROCESS',
+      parentId: rootProduct.id,
+      decompositionCharacteristic: "За счёт скорости сканирования в 10 раз выше аналогов (ключевая характеристика Продукта)",
+    },
+  });
+
+  console.log('🌳 Создана иерархия декомпозиции УТК:');
+  console.log(`    PRODUCT  [#${rootProduct.id}] ${rootProduct.keyProduct}`);
+  console.log(`    ├─ ELEMENT [#${opticalElement.id}] ${opticalElement.keyProduct}`);
+  console.log(`    └─ PROCESS [#${algorithmProcess.id}] ${algorithmProcess.keyProduct}`);
+
   console.log('🎉 База данных успешно заполнена!');
 }
 

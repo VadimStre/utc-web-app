@@ -4,8 +4,9 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
-import { UTCRecord, UTCFormData, SearchFilters as SearchFiltersType } from '@/lib/types';
+import { UTCRecord, UTCFormData, UTCTreeNode, SearchFilters as SearchFiltersType } from '@/lib/types';
 import { UTCTable } from '@/components/utc-table';
+import { UTCTree } from '@/components/utc-tree';
 import { UTCForm } from '@/components/utc-form';
 import { UTCView } from '@/components/utc-view';
 import { SearchFilters } from '@/components/search-filters';
@@ -14,6 +15,7 @@ import { HelpGuidance } from '@/components/help-guidance';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { 
   Plus, 
@@ -48,6 +50,15 @@ export default function HomePage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<UTCRecord | null>(null);
+
+  // Дерево УТК (Этап 2)
+  const [viewMode, setViewMode] = useState<'table' | 'tree'>('table');
+  const [treeData, setTreeData] = useState<UTCTreeNode[]>([]);
+  const [isTreeLoading, setIsTreeLoading] = useState(false);
+  const [treeError, setTreeError] = useState<string | null>(null);
+  const [showAddChildForm, setShowAddChildForm] = useState(false);
+  const [addChildParent, setAddChildParent] = useState<UTCTreeNode | null>(null);
+
   
   // Состояния поиска и пагинации
   const [searchFilters, setSearchFilters] = useState<SearchFiltersType>({});
@@ -242,6 +253,64 @@ export default function HomePage() {
     fetchRecords(searchFilters, page);
   };
 
+  // Загрузка дерева УТК (Этап 2)
+  const fetchTree = async () => {
+    setIsTreeLoading(true);
+    setTreeError(null);
+    try {
+      const response = await fetch('/api/utc/tree');
+      if (!response.ok) {
+        throw new Error('Ошибка загрузки дерева УТК');
+      }
+      const data = await response.json();
+      setTreeData(data.tree || []);
+    } catch (error) {
+      console.error('Ошибка загрузки дерева:', error);
+      setTreeError('Не удалось загрузить дерево УТК');
+    } finally {
+      setIsTreeLoading(false);
+    }
+  };
+
+  const handleAddChild = async (formData: UTCFormData) => {
+    if (!addChildParent?.id) return;
+    try {
+      const response = await fetch(`/api/utc/${addChildParent.id}/add-child`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка добавления узла');
+      }
+
+      toast({
+        title: "Успех",
+        description: "Дочерний узел успешно добавлен",
+      });
+
+      setShowAddChildForm(false);
+      setAddChildParent(null);
+      fetchTree();
+      fetchRecords(searchFilters, pagination.page);
+    } catch (error) {
+      console.error('Ошибка добавления узла:', error);
+      toast({
+        title: "Ошибка",
+        description: error instanceof Error ? error.message : "Не удалось добавить узел",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (viewMode === 'tree') {
+      fetchTree();
+    }
+  }, [viewMode]);
+
   // Загрузка данных при монтировании
   useEffect(() => {
     fetchRecords();
@@ -395,17 +464,19 @@ export default function HomePage() {
           </Card>
         )}
 
-        {/* Таблица записей */}
+        {/* Таблица / дерево записей */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Записи УТК</CardTitle>
                 <CardDescription>
-                  {isLoading ? 'Загрузка...' : `Найдено ${pagination.total} записей`}
+                  {viewMode === 'table'
+                    ? (isLoading ? 'Загрузка...' : `Найдено ${pagination.total} записей`)
+                    : (isTreeLoading ? 'Загрузка...' : 'Иерархия декомпозиции УТК')}
                 </CardDescription>
               </div>
-              {records.length > 0 && (
+              {viewMode === 'table' && records.length > 0 && (
                 <Badge variant="outline">
                   {records.length} из {pagination.total}
                 </Badge>
@@ -413,39 +484,82 @@ export default function HomePage() {
             </div>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-                Загрузка записей...
-              </div>
-            ) : (
-              <>
-                <UTCTable
-                  records={records}
-                  onEdit={(record) => {
-                    setSelectedRecord(record);
-                    setShowEditForm(true);
-                  }}
-                  onDelete={handleDelete}
-                  onView={(record) => {
-                    setSelectedRecord(record);
-                    setShowViewModal(true);
-                  }}
-                />
-                
-                {pagination.pages > 1 && (
-                  <div className="mt-4">
-                    <Pagination
-                      currentPage={pagination.page}
-                      totalPages={pagination.pages}
-                      totalItems={pagination.total}
-                      itemsPerPage={pagination.limit}
-                      onPageChange={handlePageChange}
-                    />
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'tree')}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="table">Таблица</TabsTrigger>
+                <TabsTrigger value="tree">Дерево</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="table">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                    Загрузка записей...
                   </div>
+                ) : (
+                  <>
+                    <UTCTable
+                      records={records}
+                      onEdit={(record) => {
+                        setSelectedRecord(record);
+                        setShowEditForm(true);
+                      }}
+                      onDelete={handleDelete}
+                      onView={(record) => {
+                        setSelectedRecord(record);
+                        setShowViewModal(true);
+                      }}
+                    />
+
+                    {pagination.pages > 1 && (
+                      <div className="mt-4">
+                        <Pagination
+                          currentPage={pagination.page}
+                          totalPages={pagination.pages}
+                          totalItems={pagination.total}
+                          itemsPerPage={pagination.limit}
+                          onPageChange={handlePageChange}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </TabsContent>
+
+              <TabsContent value="tree">
+                {isTreeLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                    Загрузка дерева...
+                  </div>
+                ) : treeError ? (
+                  <div className="flex items-center gap-2 text-destructive py-4">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>{treeError}</span>
+                    <Button variant="outline" size="sm" onClick={fetchTree} className="ml-auto">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Повторить
+                    </Button>
+                  </div>
+                ) : (
+                  <UTCTree
+                    nodes={treeData}
+                    onView={(node) => {
+                      setSelectedRecord(node);
+                      setShowViewModal(true);
+                    }}
+                    onEdit={(node) => {
+                      setSelectedRecord(node);
+                      setShowEditForm(true);
+                    }}
+                    onAddChild={(parent) => {
+                      setAddChildParent(parent);
+                      setShowAddChildForm(true);
+                    }}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
@@ -473,8 +587,21 @@ export default function HomePage() {
             advantages: selectedRecord.advantages,
             owner: selectedRecord.owner,
             formulation: selectedRecord.formulation,
+            nodeType: selectedRecord.nodeType,
+            decompositionCharacteristic: selectedRecord.decompositionCharacteristic || '',
           } : null}
           isEditing={true}
+        />
+
+        <UTCForm
+          open={showAddChildForm}
+          onClose={() => {
+            setShowAddChildForm(false);
+            setAddChildParent(null);
+          }}
+          onSubmit={handleAddChild}
+          isChildMode={true}
+          parentLabel={addChildParent ? (addChildParent.keyProduct || addChildParent.formulation) : undefined}
         />
 
         <UTCView

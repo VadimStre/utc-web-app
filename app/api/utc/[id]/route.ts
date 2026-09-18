@@ -120,18 +120,110 @@ export async function PUT(
       }
     }
 
+    // Иерархия (Этап 2): опциональное обновление parentId/nodeType/decompositionCharacteristic.
+    const updateData: Record<string, unknown> = {
+      organization: data.organization.trim(),
+      keyProduct: data.keyProduct.trim(),
+      purpose: data.purpose.trim(),
+      categories: data.categories.trim(),
+      principle: data.principle.trim(),
+      advantages: data.advantages.trim(),
+      owner: data.owner.trim(),
+      formulation: data.formulation.trim(),
+    };
+
+    if (Object.prototype.hasOwnProperty.call(data, 'decompositionCharacteristic')) {
+      updateData.decompositionCharacteristic = data.decompositionCharacteristic
+        ? String(data.decompositionCharacteristic).trim()
+        : null;
+    }
+
+    let newParentId: number | null | undefined = undefined;
+    if (Object.prototype.hasOwnProperty.call(data, 'parentId')) {
+      if (data.parentId === null || data.parentId === '' || data.parentId === undefined) {
+        newParentId = null;
+      } else {
+        const parsedParentId = Number(data.parentId);
+        if (!Number.isInteger(parsedParentId)) {
+          return NextResponse.json({ error: 'Некорректный parentId' }, { status: 400 });
+        }
+        newParentId = parsedParentId;
+      }
+    }
+
+    let newNodeType: 'PRODUCT' | 'ELEMENT' | 'PROCESS' | undefined = undefined;
+    if (Object.prototype.hasOwnProperty.call(data, 'nodeType') && data.nodeType) {
+      if (!['PRODUCT', 'ELEMENT', 'PROCESS'].includes(data.nodeType)) {
+        return NextResponse.json({ error: 'Некорректный nodeType' }, { status: 400 });
+      }
+      newNodeType = data.nodeType;
+    }
+
+    if (newParentId !== undefined) {
+      if (newParentId === id) {
+        return NextResponse.json(
+          { error: 'Узел не может быть своим собственным родителем' },
+          { status: 400 }
+        );
+      }
+
+      if (newParentId !== null) {
+        const newParent = await prisma.uTCRecord.findUnique({ where: { id: newParentId } });
+        if (!newParent) {
+          return NextResponse.json({ error: 'Родительская запись не найдена' }, { status: 400 });
+        }
+
+        // Защита от циклов: пройти вверх от newParentId до корня и убедиться, что id
+        // (текущий узел) не встречается среди предков — иначе узел стал бы потомком самого себя.
+        let ancestorId: number | null = newParent.parentId;
+        const visited = new Set<number>([newParentId]);
+        while (ancestorId !== null) {
+          if (ancestorId === id) {
+            return NextResponse.json(
+              { error: 'Обнаружен цикл: узел не может стать потомком самого себя' },
+              { status: 400 }
+            );
+          }
+          if (visited.has(ancestorId)) break; // защита от зацикливания при повреждённых данных
+          visited.add(ancestorId);
+          const ancestor: { parentId: number | null } | null = await prisma.uTCRecord.findUnique({
+            where: { id: ancestorId },
+            select: { parentId: true },
+          });
+          if (!ancestor) break;
+          ancestorId = ancestor.parentId;
+        }
+      }
+
+      updateData.parentId = newParentId;
+    }
+
+    if (newNodeType !== undefined) {
+      updateData.nodeType = newNodeType;
+    }
+
+    // Согласованность типа/родителя после применения изменений
+    const effectiveParentId = newParentId !== undefined ? newParentId : (await prisma.uTCRecord.findUnique({ where: { id }, select: { parentId: true } }))?.parentId ?? null;
+    const effectiveNodeType = newNodeType !== undefined ? newNodeType : (await prisma.uTCRecord.findUnique({ where: { id }, select: { nodeType: true } }))?.nodeType;
+
+    if (effectiveParentId === null && effectiveNodeType !== 'PRODUCT' && newNodeType === undefined && newParentId !== undefined) {
+      // Родитель убран, а тип не PRODUCT и явно не задан новый тип — переводим в PRODUCT (стал корнем).
+      updateData.nodeType = 'PRODUCT';
+    } else if (effectiveParentId === null && effectiveNodeType !== 'PRODUCT' && newNodeType !== undefined) {
+      return NextResponse.json(
+        { error: 'Корневая запись (без parentId) должна иметь nodeType = PRODUCT' },
+        { status: 400 }
+      );
+    } else if (effectiveParentId !== null && effectiveNodeType === 'PRODUCT') {
+      return NextResponse.json(
+        { error: 'Дочерняя запись (с parentId) должна иметь nodeType = ELEMENT или PROCESS' },
+        { status: 400 }
+      );
+    }
+
     const record = await prisma.uTCRecord.update({
       where: { id },
-      data: {
-        organization: data.organization.trim(),
-        keyProduct: data.keyProduct.trim(),
-        purpose: data.purpose.trim(),
-        categories: data.categories.trim(),
-        principle: data.principle.trim(),
-        advantages: data.advantages.trim(),
-        owner: data.owner.trim(),
-        formulation: data.formulation.trim(),
-      },
+      data: updateData,
       include: {
         ownerUser: {
           select: { id: true, email: true, name: true },

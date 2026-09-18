@@ -13,6 +13,12 @@ enum Role {
   ADMIN
 }
 
+enum UtcNodeType {
+  PRODUCT
+  ELEMENT
+  PROCESS
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -61,6 +67,15 @@ model UTCRecord {
   // без ownerId считаются системными/общими: видны всем, редактируются только ADMIN.
   ownerId   String?
   ownerUser User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  // Иерархия декомпозиции УТК (Этап 2): PRODUCT (корень) -> ELEMENT/PROCESS (дети, рекурсивно).
+  // onDelete: SetNull — при удалении родителя поддерево НЕ удаляется каскадно, дети становятся
+  // корневыми узлами (осиротевшими), чтобы случайное удаление узла не сносило всё дерево ниже.
+  nodeType                    UtcNodeType @default(PRODUCT)
+  parentId                    Int?
+  parent                      UTCRecord?  @relation("UtcHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children                    UTCRecord[] @relation("UtcHierarchy")
+  decompositionCharacteristic String?
 
   @@map("utc_records")
 }

@@ -118,6 +118,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Иерархия декомпозиции (Этап 2): parentId/nodeType/decompositionCharacteristic — опциональны.
+    let parentId: number | null = null;
+    if (data.parentId !== undefined && data.parentId !== null && data.parentId !== '') {
+      const parsedParentId = Number(data.parentId);
+      if (!Number.isInteger(parsedParentId)) {
+        return NextResponse.json(
+          { error: 'Некорректный parentId' },
+          { status: 400 }
+        );
+      }
+      const parent = await prisma.uTCRecord.findUnique({ where: { id: parsedParentId } });
+      if (!parent) {
+        return NextResponse.json(
+          { error: 'Родительская запись не найдена' },
+          { status: 400 }
+        );
+      }
+      parentId = parsedParentId;
+    }
+
+    let nodeType: 'PRODUCT' | 'ELEMENT' | 'PROCESS' = data.nodeType ?? (parentId ? 'ELEMENT' : 'PRODUCT');
+    if (!['PRODUCT', 'ELEMENT', 'PROCESS'].includes(nodeType)) {
+      return NextResponse.json(
+        { error: 'Некорректный nodeType' },
+        { status: 400 }
+      );
+    }
+
+    if (parentId === null && nodeType !== 'PRODUCT') {
+      return NextResponse.json(
+        { error: 'Корневая запись (без parentId) должна иметь nodeType = PRODUCT' },
+        { status: 400 }
+      );
+    }
+
+    if (parentId !== null && nodeType === 'PRODUCT') {
+      return NextResponse.json(
+        { error: 'Дочерняя запись (с parentId) должна иметь nodeType = ELEMENT или PROCESS' },
+        { status: 400 }
+      );
+    }
+
     const record = await prisma.uTCRecord.create({
       data: {
         organization: data.organization.trim(),
@@ -129,6 +171,11 @@ export async function POST(request: NextRequest) {
         owner: data.owner.trim(),
         formulation: data.formulation.trim(),
         ownerId: session.user.id,
+        nodeType,
+        parentId,
+        decompositionCharacteristic: data.decompositionCharacteristic
+          ? String(data.decompositionCharacteristic).trim()
+          : null,
       },
       include: {
         ownerUser: {

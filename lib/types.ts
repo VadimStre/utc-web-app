@@ -1,4 +1,6 @@
 
+export type UtcNodeType = "PRODUCT" | "ELEMENT" | "PROCESS";
+
 export interface UTCRecord {
   id?: number;
   organization: string;
@@ -16,7 +18,16 @@ export interface UTCRecord {
   ownerUser?: { id: string; email: string; name?: string | null } | null;
   // Признак, вычисленный на бэкенде: может ли текущий пользователь редактировать/удалять запись.
   canEdit?: boolean;
+
+  // Иерархия декомпозиции УТК (Этап 2)
+  nodeType?: UtcNodeType;
+  parentId?: number | null;
+  decompositionCharacteristic?: string | null;
+  children?: UTCRecord[];
 }
+
+// Узел дерева УТК: та же запись, но children гарантированно являются деревом.
+export type UTCTreeNode = UTCRecord & { children: UTCTreeNode[] };
 
 export interface UTCFormData {
   organization: string;
@@ -27,6 +38,9 @@ export interface UTCFormData {
   advantages: string;
   owner: string;
   formulation: string;
+  // Поля декомпозиции (используются только при добавлении дочернего узла)
+  nodeType?: UtcNodeType;
+  decompositionCharacteristic?: string;
 }
 
 export interface SearchFilters {
@@ -56,3 +70,9 @@ export const UTC_EXAMPLES = {
   owner: "Иванов И.И., главный инженер, +7(495)123-45-67, ivanov@company.ru",
   formulation: "Технология высокоразрешающей лазерной микроскопии для анализа наноструктур"
 } as const;
+
+export const UTC_NODE_TYPE_LABELS: Record<UtcNodeType, string> = {
+  PRODUCT: "Продукт",
+  ELEMENT: "Ключевой элемент",
+  PROCESS: "Ключевой процесс",
+};
