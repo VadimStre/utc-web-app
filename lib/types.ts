@@ -108,6 +108,35 @@ export interface WizardSession {
   isComplete: boolean;
 }
 
+// ===== Поиск конкурентов-аналогов (Этап 4) =====
+
+export interface CompetitorCharacteristic {
+  name: string;
+  value: string;
+}
+
+export interface CompetitorInfo {
+  companyName: string;
+  product: string;
+  characteristics: CompetitorCharacteristic[];
+  sourceUrl: string;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+export interface SerperOrganicResultDTO {
+  title: string;
+  link: string;
+  snippet: string;
+  position: number;
+}
+
+export interface CompetitorSearchResult {
+  searchQuery: string;
+  rawResults: SerperOrganicResultDTO[];
+  competitors: CompetitorInfo[];
+  note?: string;
+}
+
 export const EXTRACTED_FIELD_LABELS: Record<keyof ExtractedUtcData, string> = {
   organization: "1. Организация, ХК",
   keyProduct: "2. Передовой продукт",

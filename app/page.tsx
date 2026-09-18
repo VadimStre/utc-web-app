@@ -618,6 +618,10 @@ export default function HomePage() {
             setSelectedRecord(null);
           }}
           record={selectedRecord}
+          onRecordUpdated={(updated) => {
+            setSelectedRecord(updated);
+            fetchRecords(searchFilters, pagination.page);
+          }}
         />
       </div>
     </div>

@@ -11,15 +11,17 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { CompetitorSearch } from '@/components/competitor-search';
 import { X, Calendar, Building, Cog } from 'lucide-react';
 
 interface UTCViewProps {
   open: boolean;
   onClose: () => void;
   record: UTCRecord | null;
+  onRecordUpdated?: (record: UTCRecord) => void;
 }
 
-export function UTCView({ open, onClose, record }: UTCViewProps) {
+export function UTCView({ open, onClose, record, onRecordUpdated }: UTCViewProps) {
   if (!record) return null;
 
   const formatDate = (date: Date | string | undefined) => {
@@ -141,6 +143,18 @@ export function UTCView({ open, onClose, record }: UTCViewProps) {
               </div>
             </CardContent>
           </Card>
+
+          {/* Поиск конкурентов-аналогов (Этап 4) — доступно только автору записи или админу */}
+          {record.canEdit && (
+            <CompetitorSearch
+              record={record}
+              onApplied={(updated) => {
+                if (onRecordUpdated) {
+                  onRecordUpdated(updated);
+                }
+              }}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
