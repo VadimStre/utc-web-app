@@ -1,14 +1,18 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 
 export const dynamic = "force-dynamic";
 
-// GET - Получить все записи УТК с фильтрацией и поиском
+// GET - Получить все записи УТК с фильтрацией и поиском (доступно всем, включая гостей)
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const currentUserId = session?.user?.id;
+    const isAdmin = session?.user?.role === 'ADMIN';
+
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('query') || '';
     const organization = searchParams.get('organization') || '';
@@ -47,12 +51,22 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
         orderBy: { updatedAt: 'desc' },
+        include: {
+          ownerUser: {
+            select: { id: true, email: true, name: true },
+          },
+        },
       }),
       prisma.uTCRecord.count({ where }),
     ]);
 
+    const recordsWithPermissions = records.map((record) => ({
+      ...record,
+      canEdit: isAdmin || (!!currentUserId && record.ownerId === currentUserId),
+    }));
+
     return NextResponse.json({
-      records,
+      records: recordsWithPermissions,
       pagination: {
         page,
         limit,
@@ -69,9 +83,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Создать новую запись УТК
+// POST - Создать новую запись УТК (требует аутентификации)
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Требуется аутентификация' },
+        { status: 401 }
+      );
+    }
+
     const data = await request.json();
 
     // Валидация обязательных полей
@@ -105,10 +128,16 @@ export async function POST(request: NextRequest) {
         advantages: data.advantages.trim(),
         owner: data.owner.trim(),
         formulation: data.formulation.trim(),
+        ownerId: session.user.id,
+      },
+      include: {
+        ownerUser: {
+          select: { id: true, email: true, name: true },
+        },
       },
     });
 
-    return NextResponse.json(record, { status: 201 });
+    return NextResponse.json({ ...record, canEdit: true }, { status: 201 });
   } catch (error) {
     console.error('Ошибка создания записи УТК:', error);
     return NextResponse.json(

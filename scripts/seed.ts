@@ -1,7 +1,11 @@
 
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+const ADMIN_EMAIL = 'admin@utc.local';
+const ADMIN_PASSWORD = 'Admin12345!';
 
 async function main() {
   console.log('🌱 Начинаем заполнение базы данных тестовыми записями УТК...');
@@ -9,7 +13,25 @@ async function main() {
   // Очищаем существующие записи
   await prisma.uTCRecord.deleteMany();
 
-  // Тестовые записи УТК
+  // Создаём (или обновляем) первого администратора
+  const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+  await prisma.user.upsert({
+    where: { email: ADMIN_EMAIL },
+    update: {},
+    create: {
+      email: ADMIN_EMAIL,
+      passwordHash: adminPasswordHash,
+      name: 'Администратор',
+      role: 'ADMIN',
+    },
+  });
+
+  console.log('👑 Создан пользователь-администратор:');
+  console.log(`    Email:  ${ADMIN_EMAIL}`);
+  console.log(`    Пароль: ${ADMIN_PASSWORD}`);
+  console.log('    ⚠️  СМЕНИТЕ ПАРОЛЬ ПОСЛЕ ПЕРВОГО ВХОДА!');
+
+  // Тестовые записи УТК (общие/системные — без ownerId, видны всем, редактируются только ADMIN)
   const sampleRecords = [
     {
       organization: "ООО 'Инновационные Оптические Системы'",
@@ -73,7 +95,7 @@ async function main() {
     }
   ];
 
-  // Создаем записи
+  // Создаем записи (без ownerId — общие/системные записи)
   for (const record of sampleRecords) {
     await prisma.uTCRecord.create({
       data: record,

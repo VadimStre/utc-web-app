@@ -2,6 +2,8 @@
 "use client"
 
 import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
 import { UTCRecord, UTCFormData, SearchFilters as SearchFiltersType } from '@/lib/types';
 import { UTCTable } from '@/components/utc-table';
 import { UTCForm } from '@/components/utc-form';
@@ -19,7 +21,10 @@ import {
   TrendingUp, 
   Building, 
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  LogIn,
+  UserPlus,
+  LogOut,
 } from 'lucide-react';
 
 interface PaginationData {
@@ -30,6 +35,10 @@ interface PaginationData {
 }
 
 export default function HomePage() {
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === 'authenticated';
+  const isAdmin = session?.user?.role === 'ADMIN';
+
   const [records, setRecords] = useState<UTCRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -256,10 +265,42 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-3">
               <HelpGuidance />
-              <Button onClick={() => setShowCreateForm(true)} className="bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                Создать УТК
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <div className="hidden md:flex flex-col items-end mr-2">
+                    <span className="text-sm font-medium">{session?.user?.email}</span>
+                    <Badge variant={isAdmin ? 'default' : 'secondary'} className="mt-1">
+                      {isAdmin ? 'Администратор' : 'Пользователь'}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Выйти
+                  </Button>
+                  <Button onClick={() => setShowCreateForm(true)} className="bg-primary hover:bg-primary/90">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Создать УТК
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" asChild>
+                    <Link href="/login">
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Войти
+                    </Link>
+                  </Button>
+                  <Button asChild>
+                    <Link href="/register">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Зарегистрироваться
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

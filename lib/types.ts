@@ -11,6 +11,11 @@ export interface UTCRecord {
   formulation: string;
   createdAt?: Date;
   updatedAt?: Date;
+  // Владелец записи в системе (пользователь). Не путать со строковым полем `owner` выше.
+  ownerId?: string | null;
+  ownerUser?: { id: string; email: string; name?: string | null } | null;
+  // Признак, вычисленный на бэкенде: может ли текущий пользователь редактировать/удалять запись.
+  canEdit?: boolean;
 }
 
 export interface UTCFormData {

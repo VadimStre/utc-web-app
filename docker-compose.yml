@@ -44,7 +44,10 @@ services:
         condition: service_healthy
     environment:
       # Внутри docker-сети хост базы = имя сервиса "db"
-      DATABASE_URL: "postgresql://utc_user:utc_password@db:5432/utc_db?connect_timeout=15"
+      DATABASE_URL: "postgresql://utc_user:***@db:5432/utc_db?connect_timeout=15"
+      # NextAuth.js: секрет и базовый URL (задайте свои значения в .env/окружении для продакшена)
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET:-local-dev-insecure-secret-change-me}"
+      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
     ports:
       - "3000:3000"
 
