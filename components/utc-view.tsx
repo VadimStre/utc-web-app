@@ -12,6 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CompetitorSearch } from '@/components/competitor-search';
+import { AltApplicationsSearch } from '@/components/alt-applications-search';
 import { X, Calendar, Building, Cog } from 'lucide-react';
 
 interface UTCViewProps {
@@ -155,6 +156,10 @@ export function UTCView({ open, onClose, record, onRecordUpdated }: UTCViewProps
               }}
             />
           )}
+
+          {/* Поиск альтернативных областей применения / новых рынков (Этап 5) — доступно всем,
+              это просмотр/аналитика, а не изменение данных записи. */}
+          <AltApplicationsSearch record={record} />
         </div>
       </DialogContent>
     </Dialog>

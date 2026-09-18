@@ -137,6 +137,34 @@ export interface CompetitorSearchResult {
   note?: string;
 }
 
+// ===== Поиск альтернативных областей применения / новых рынков (Этап 5) =====
+
+export type FeasibilityLevel = 'low' | 'medium' | 'high';
+
+export interface AltApplicationVariant {
+  description: string;
+  type: 'alternative_object' | 'new_function_object';
+  parentFunction?: string;
+  scores: {
+    feasibility: FeasibilityLevel;
+    technicalFeasibility: FeasibilityLevel;
+    economicFeasibility: FeasibilityLevel;
+  };
+  totalScore: number;
+  recommended: boolean;
+}
+
+export interface AltApplicationsNewFunction {
+  function: string;
+  objects: string[];
+}
+
+export interface AltApplicationsResult {
+  alternativeObjects: string[];
+  newFunctions: AltApplicationsNewFunction[];
+  allVariantsRanked: AltApplicationVariant[];
+}
+
 export const EXTRACTED_FIELD_LABELS: Record<keyof ExtractedUtcData, string> = {
   organization: "1. Организация, ХК",
   keyProduct: "2. Передовой продукт",
