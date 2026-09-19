@@ -4,3 +4,4 @@ node_modules/
 .env.local
 *.tsbuildinfo
 npm-debug.log*
+scripts/ssh-helper.py

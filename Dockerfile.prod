@@ -1,0 +1,21 @@
+# ---- Продакшен-образ приложения "База данных УТК" ----
+FROM node:20-bookworm-slim
+
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+COPY . .
+
+RUN npx prisma generate
+
+# entrypoint: db push -> seed-if-empty -> build -> start
+COPY scripts/docker-entrypoint.prod.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+EXPOSE 3000
+
+CMD ["/app/docker-entrypoint.sh"]

@@ -1,0 +1,46 @@
+# ============================================================
+# Продакшен docker-compose для VPS (Timeweb Cloud)
+# Запуск на сервере: docker compose -f docker-compose.prod.yml up -d --build
+# ============================================================
+
+services:
+  db:
+    image: postgres:16
+    container_name: utc_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: utc_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-utc_change_me_password}
+      POSTGRES_DB: utc_db
+    # Порт наружу НЕ пробрасываем — доступен только внутри docker-сети
+    volumes:
+      - utc_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U utc_user -d utc_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: utc_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://utc_user:${DB_PASSWORD:-utc_change_me_password}@db:5432/utc_db?connect_timeout=15&schema=public"
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET обязателен}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://5.42.106.111:3000}
+      ABACUS_API_KEY: ${ABACUS_API_KEY:-}
+      ABACUS_API_BASE_URL: ${ABACUS_API_BASE_URL:-https://routellm.abacus.ai/v1}
+      ABACUS_MODEL: ${ABACUS_MODEL:-route-llm}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+
+volumes:
+  utc_pgdata:
