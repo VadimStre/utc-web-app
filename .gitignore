@@ -5,3 +5,5 @@ node_modules/
 *.tsbuildinfo
 npm-debug.log*
 scripts/ssh-helper.py
+vps-setup.txt
+scripts/gen-vps-setup.cjs
