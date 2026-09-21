@@ -3,7 +3,7 @@
 set -e
 
 echo "==> Применяем схему БД (Prisma)..."
-npx prisma db push
+npx prisma db push --skip-generate
 
 echo "==> Сид, только если база пустая..."
 npx tsx scripts/seed-if-empty.ts

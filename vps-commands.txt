@@ -1,0 +1,11 @@
+# ВСТАВЛЯТЬ ПО ОДНОЙ СТРОКЕ (каждая + Enter):
+cd /opt/utc
+echo DB_PASSWORD=mlgpnFEdMyMsJr38 > .env.prod
+echo NEXTAUTH_SECRET=xDosWwWP48CvDwrogcGnWGJgGFsa793J >> .env.prod
+echo NEXTAUTH_URL=http://5.42.106.111:3000 >> .env.prod
+echo ABACUS_API_KEY=s2_0bcd4b14469340618c9b5ba83cebd51a >> .env.prod
+echo ABACUS_API_BASE_URL=https://routellm.abacus.ai/v1 >> .env.prod
+echo ABACUS_MODEL=route-llm >> .env.prod
+echo SERPER_API_KEY=601e041a6dc74667daba6e2edacbbe1e1b261133 >> .env.prod
+cat .env.prod
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build

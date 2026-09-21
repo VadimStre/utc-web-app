@@ -15,7 +15,7 @@ COPY . .
 
 # prisma generate без лишних сетевых запросов: пакет prisma уже стоит, 
 # просто вызываем локальный бинарник через node
-RUN npx prisma generate
+RUN npx prisma generate --no-hints
 
 # entrypoint: db push -> seed-if-empty -> build -> start
 COPY scripts/docker-entrypoint.prod.sh /app/docker-entrypoint.sh
