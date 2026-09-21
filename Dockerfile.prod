@@ -1,22 +1,23 @@
 # ---- Продакшен-образ приложения "База данных УТК" ----
 FROM node:20-bookworm-slim
 
-# npm-зеркало для РФ (registry.npmjs.org недоступен/медленный из Timeweb)
-RUN npm config set registry https://registry.npmmirror.com
+# Официальный registry + ретраи (npmmirror режет prisma-engines — большие бинарники)
+RUN npm config set registry https://registry.npmjs.org && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000
 
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-# npm ci ненадёжен при --legacy-peer-deps (пропускает prisma/tsx) — используем npm install
-RUN npm install --legacy-peer-deps
-# Гарантия: prisma и tsx ОБЯЗАТЕЛЬНО установлены
+RUN npm install --legacy-peer-deps || (echo "RETRY npm install..."; npm install --legacy-peer-deps)
+# Гарантия: prisma обязан быть установлен
 RUN test -x node_modules/.bin/prisma && echo "prisma OK: $(node_modules/.bin/prisma --version | head -1)"
 
 COPY . .
 
-# prisma generate — прямой вызов (без npx, чтобы не качал свежий prisma из сети)
 RUN ./node_modules/.bin/prisma generate --no-hints
 
 # entrypoint: db push -> seed-if-empty -> build -> start
