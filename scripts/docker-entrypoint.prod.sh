@@ -3,10 +3,10 @@
 set -e
 
 echo "==> Применяем схему БД (Prisma)..."
-npx prisma db push --skip-generate
+./node_modules/.bin/prisma db push --skip-generate
 
 echo "==> Сид, только если база пустая..."
-npx tsx scripts/seed-if-empty.ts
+./node_modules/.bin/tsx scripts/seed-if-empty.ts
 
 echo "==> Продакшен-сборка Next.js..."
 npm run build

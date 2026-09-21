@@ -9,13 +9,15 @@ RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+# npm ci ненадёжен при --legacy-peer-deps (пропускает prisma/tsx) — используем npm install
+RUN npm install --legacy-peer-deps
+# Гарантия: prisma и tsx ОБЯЗАТЕЛЬНО установлены
+RUN test -x node_modules/.bin/prisma && echo "prisma OK: $(node_modules/.bin/prisma --version | head -1)"
 
 COPY . .
 
-# prisma generate без лишних сетевых запросов: пакет prisma уже стоит, 
-# просто вызываем локальный бинарник через node
-RUN npx prisma generate --no-hints
+# prisma generate — прямой вызов (без npx, чтобы не качал свежий prisma из сети)
+RUN ./node_modules/.bin/prisma generate --no-hints
 
 # entrypoint: db push -> seed-if-empty -> build -> start
 COPY scripts/docker-entrypoint.prod.sh /app/docker-entrypoint.sh
