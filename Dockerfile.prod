@@ -1,6 +1,9 @@
 # ---- Продакшен-образ приложения "База данных УТК" ----
 FROM node:20-bookworm-slim
 
+# npm-зеркало для РФ (registry.npmjs.org недоступен/медленный из Timeweb)
+RUN npm config set registry https://registry.npmmirror.com
+
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -10,6 +13,8 @@ RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
 COPY . .
 
+# prisma generate без лишних сетевых запросов: пакет prisma уже стоит, 
+# просто вызываем локальный бинарник через node
 RUN npx prisma generate
 
 # entrypoint: db push -> seed-if-empty -> build -> start
