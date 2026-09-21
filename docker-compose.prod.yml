@@ -38,7 +38,7 @@ services:
       ABACUS_API_BASE_URL: ${ABACUS_API_BASE_URL:-https://routellm.abacus.ai/v1}
       ABACUS_MODEL: ${ABACUS_MODEL:-route-llm}
       SERPER_API_KEY: ${SERPER_API_KEY:-}
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-development}
     ports:
       - "3000:3000"
 
