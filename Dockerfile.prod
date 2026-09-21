@@ -1,13 +1,16 @@
 # ---- Продакшен-образ приложения "База данных УТК" ----
 FROM node:20-bookworm-slim
 
-# Официальный registry + ретраи (npmjs стабильнее для prisma-engines)
+# npmjs + retry (npm-пакеты)
 RUN npm config set registry https://registry.npmjs.org && \
     npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000
 
-# apt с retry и без recommends (устойчиво к таймаутам на VPS)
+# Зеркало для Prisma-движков (binaries.prisma.sh блокируется в РФ)
+ENV PRISMA_ENGINES_MIRROR=https://registry.npmmirror.com/-/binary/prisma
+ENV PRISMA_MIGRATION_ENGINE_MIRROR=https://registry.npmmirror.com/-/binary/prisma
+
 RUN apt-get update -y --fix-missing || apt-get update -y --fix-missing; \
     apt-get install -y --no-install-recommends openssl ca-certificates || \
     (sleep 5 && apt-get install -y --no-install-recommends openssl ca-certificates); \
