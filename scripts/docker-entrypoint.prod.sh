@@ -2,6 +2,14 @@
 # Production entrypoint: migrate -> seed-if-empty -> build -> start
 set -e
 
+echo "==> Проверка prisma в контейнере..."
+if [ ! -x ./node_modules/.bin/prisma ]; then
+  echo "!! prisma НЕ найден в node_modules/.bin — падаем, чтобы не качать из сети (npx)."
+  ls node_modules/.bin 2>/dev/null | head -20 || echo "(нет .bin)"
+  exit 1
+fi
+./node_modules/.bin/prisma --version | head -2
+
 echo "==> Применяем схему БД (Prisma)..."
 ./node_modules/.bin/prisma db push --skip-generate
 
