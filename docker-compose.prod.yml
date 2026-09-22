@@ -1,6 +1,5 @@
 # ============================================================
 # Продакшен docker-compose для VPS (Timeweb Cloud)
-# Запуск на сервере: docker compose -f docker-compose.prod.yml up -d --build
 # ============================================================
 
 services:
@@ -12,7 +11,6 @@ services:
       POSTGRES_USER: utc_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:-utc_change_me_password}
       POSTGRES_DB: utc_db
-    # Порт наружу НЕ пробрасываем — доступен только внутри docker-сети
     volumes:
       - utc_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -38,7 +36,7 @@ services:
       ABACUS_API_BASE_URL: ${ABACUS_API_BASE_URL:-https://routellm.abacus.ai/v1}
       ABACUS_MODEL: ${ABACUS_MODEL:-route-llm}
       SERPER_API_KEY: ${SERPER_API_KEY:-}
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: ${NODE_ENV:-production}
     ports:
       - "3000:3000"
 
