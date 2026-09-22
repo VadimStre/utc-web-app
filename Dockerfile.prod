@@ -20,6 +20,14 @@ WORKDIR /app
 
 COPY package.json package-lock.json* ./
 RUN npm install --legacy-peer-deps || (echo "RETRY npm install..."; npm install --legacy-peer-deps)
+
+# Диагностика: что реально установилось? (вместо слепой гарантии)
+RUN echo "=== .bin после npm install ===" && ls -la node_modules/.bin/ 2>/dev/null | grep -E "prisma|tsx" ; \
+    echo "=== node_modules/prisma (пакет js) ===" && ls node_modules/prisma/package.json 2>/dev/null && node -e "console.log('prisma pkg version:', require('./node_modules/prisma/package.json').version)" 2>/dev/null ; \
+    echo "=== node_modules/@prisma ===" && ls node_modules/@prisma/ 2>/dev/null | head ; \
+    echo "=== есть ли бинарник движка ===" && ls -la node_modules/@prisma/engines/ 2>/dev/null | head -20 ; \
+    echo "=== prisma CLI (npx prisma --version) ===" && npx --no-install prisma --version 2>&1 | head -5 || echo "npx prisma не запустился"
+
 # Гарантия: prisma обязан быть установлен
 RUN test -x node_modules/.bin/prisma && echo "prisma OK: $(node_modules/.bin/prisma --version | head -1)"
 
