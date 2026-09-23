@@ -7,3 +7,5 @@ npm-debug.log*
 scripts/ssh-helper.py
 vps-setup.txt
 scripts/gen-vps-setup.cjs
+
+.autopilot/serve.*
