@@ -20,9 +20,7 @@ services:
       retries: 10
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
+    image: utc-app:fixed
     container_name: utc_app
     restart: unless-stopped
     depends_on:
@@ -38,7 +36,7 @@ services:
       SERPER_API_KEY: ${SERPER_API_KEY:-}
       NODE_ENV: ${NODE_ENV:-production}
     ports:
-      - "3000:3000"
+      - "80:3000"
 
 volumes:
   utc_pgdata:
