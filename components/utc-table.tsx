@@ -34,6 +34,7 @@ export function UTCTable({ records, onEdit, onDelete, onView }: UTCTableProps) {
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="w-[80px]">ID</TableHead>
+            <TableHead className="w-[150px]">Действия</TableHead>
             <TableHead className="min-w-[200px]">Организация</TableHead>
             <TableHead className="min-w-[250px]">Ключевой продукт</TableHead>
             <TableHead className="min-w-[200px]">Назначение</TableHead>
@@ -42,7 +43,6 @@ export function UTCTable({ records, onEdit, onDelete, onView }: UTCTableProps) {
             <TableHead className="min-w-[200px]">Преимущества</TableHead>
             <TableHead className="min-w-[180px]">Владелец</TableHead>
             <TableHead className="min-w-[200px]">Формулировка УТК</TableHead>
-            <TableHead className="w-[150px]">Действия</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -57,6 +57,39 @@ export function UTCTable({ records, onEdit, onDelete, onView }: UTCTableProps) {
               <TableRow key={record.id} className="hover:bg-muted/30 transition-colors">
                 <TableCell className="font-medium">
                   <Badge variant="outline">{record.id}</Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onView(record)}
+                      title="Просмотр"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {record.canEdit ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEdit(record)}
+                          title="Редактировать"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => record.id && onDelete(record.id)}
+                          title="Удалить"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
                 </TableCell>
                 <TableCell className="font-medium">
                   <div title={record.organization}>
@@ -96,39 +129,6 @@ export function UTCTable({ records, onEdit, onDelete, onView }: UTCTableProps) {
                 <TableCell>
                   <div title={record.formulation}>
                     {truncateText(record.formulation, 100)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onView(record)}
-                      title="Просмотр"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    {record.canEdit ? (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onEdit(record)}
-                          title="Редактировать"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => record.id && onDelete(record.id)}
-                          title="Удалить"
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    ) : null}
                   </div>
                 </TableCell>
               </TableRow>

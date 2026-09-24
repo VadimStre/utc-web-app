@@ -108,11 +108,11 @@ export async function scoreVariants(variants: RawVariant[]): Promise<VariantScor
         `    "economicFeasibility": "low"|"medium"|"high",\n` +
         `    "economicFeasibilityReason": "string"\n` +
         `  }\n` +
-        `]`,
+        `]` ,
     },
   ];
 
-  const rawAnswer = await callLLM(prompt, { temperature: 0.3, maxTokens: 2500 });
+  const rawAnswer = await callLLM(prompt, { temperature: 0.3, maxTokens: 8000, timeoutMs: 120000 });
   const parsed = tryParseScoresJson(rawAnswer);
   if (!parsed) {
     throw new LlmApiError('AI-оценщик вернул некорректный формат ответа при отборе вариантов.', 502);

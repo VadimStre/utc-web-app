@@ -19,7 +19,7 @@ window.STATE =
     { "id": "briefing",  "status": "done", "finishedAt": "2026-09-23T22:06:00+03:00", "note": "вопросов не потребовалось" },
     { "id": "spec",      "status": "done", "finishedAt": "2026-09-23T22:10:00+03:00" },
     { "id": "plan",      "status": "done", "startedAt": "2026-09-23T22:10:00+03:00", "finishedAt": "2026-09-23T22:12:00+03:00", "note": "2 таска, ярус T1" },
-    { "id": "build",     "status": "active", "startedAt": "2026-09-23T22:12:00+03:00" },
+    { "id": "build",     "status": "active", "startedAt": "2026-09-23T22:12:00+03:00", "note": "остановлено пользователем — деплой на Timeweb в другом сеансе" },
     { "id": "review",    "status": "pending" },
     { "id": "final",     "status": "pending" }
   ],
@@ -35,8 +35,9 @@ window.STATE =
       "blockedBy": [],
       "wave": 1,
       "zone": ["вне репозитория: доступы и проверки"],
-      "status": "in-progress",
+      "status": "done",
       "startedAt": "2026-09-23T22:20:00+03:00",
+      "finishedAt": "2026-09-23T23:10:00+03:00",
       "retries": 0,
       "repairs": 0,
       "handoffs": 0

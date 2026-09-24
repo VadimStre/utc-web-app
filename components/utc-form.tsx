@@ -34,7 +34,8 @@ const EMPTY_FORM: UTCFormData = {
   advantages: '',
   owner: '',
   formulation: '',
-  nodeType: 'ELEMENT',
+  // Корневая запись (без родителя) всегда PRODUCT; ELEMENT/PROCESS — только для дочерних узлов (isChildMode)
+  nodeType: 'PRODUCT',
   decompositionCharacteristic: '',
 };
 
@@ -76,7 +77,7 @@ export function UTCForm({
         advantages: initialData.advantages || '',
         owner: initialData.owner || '',
         formulation: initialData.formulation || '',
-        nodeType: initialData.nodeType || 'ELEMENT',
+        nodeType: initialData.nodeType || 'PRODUCT',
         decompositionCharacteristic: initialData.decompositionCharacteristic || '',
       });
     } else {
