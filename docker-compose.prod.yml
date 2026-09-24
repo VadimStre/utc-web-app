@@ -23,6 +23,10 @@ services:
     image: utc-app:fixed
     container_name: utc_app
     restart: unless-stopped
+    # ВАЖНО: образ utc-app:fixed был сделан из контейнера с 'sleep infinity' —
+    # переопределяем команду на запуск приложения, иначе после ребута/пересоздания
+    # сайт не слушает порт.
+    command: ["npm", "run", "start"]
     depends_on:
       db:
         condition: service_healthy
