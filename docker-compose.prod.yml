@@ -20,7 +20,10 @@ services:
       retries: 10
 
   app:
-    image: utc-app:fixed
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    image: utc-app:latest
     container_name: utc_app
     restart: unless-stopped
     # ВАЖНО: образ utc-app:fixed был сделан из контейнера с 'sleep infinity' —
