@@ -135,7 +135,32 @@ docker exec utc_app sh -c "node -e \"fetch('http://localhost:3000').then(r=>cons
 
 ---
 
-## 9. ПЛАНЫ / ОТКРЫТЫЕ ВОПРОСЫ
+## 9. ОТКАТ / ПОДСТРАХОВКА
+
+**Точка отката (рабочая стабильная): коммит `b6ed4fa` (2026-09-24, «Паспорт проекта»)** + образ `utc-app-stable-2026-09-24` (создаётся командой ниже).
+
+**Если сломался код после доработок:**
+1. Локально: `cd C:\Users\Latin\work\utc_web_app_local && git reset --hard b6ed4fa`
+2. Запушь: `git push origin main --force` (осторожно, перезапишет историю — ок при одиночной работе)
+3. На сервере: `cd /opt/utc && git pull origin main && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate`
+
+**Если сломался только контейнер (код не менялся):**
+```
+cd /opt/utc && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate
+```
+
+**Заморозить текущий рабочий образ (подстраховка):**
+```
+docker commit utc_app utc-app-stable-2026-09-24
+```
+Поднять из него (если всё сломалось):
+```
+docker run -d --name utc_app_restore -p 80:3000 --network utc_default -e NODE_ENV=production utc-app-stable-2026-09-24 sh -c "cd /app && npm run build && npm run start"
+```
+
+---
+
+## 10. ПЛАНЫ / ОТКРЫТЫЕ ВОПРОСЫ
 
 - [ ] **Домен + HTTPS** (убрать «Не защищено»; Timeweb умеет бесплатные SSL) — рекомендация
 - [ ] **Бэкапы БД** (ежедневный `pg_dump` или бэкапы Timeweb)
