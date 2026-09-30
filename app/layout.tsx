@@ -9,7 +9,7 @@ import { SessionProvider } from "@/components/session-provider"
 const inter = Inter({ subsets: ["latin", "cyrillic"] })
 
 export const metadata: Metadata = {
-  title: "База данных УТК",
+  title: "Коммерциализация технологических компетенций",
   description: "Система управления уникальными технологическими компетенциями",
 }
 

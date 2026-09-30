@@ -80,6 +80,23 @@ export function updateSession(
   return session;
 }
 
+// Откат диалога на один шаг назад: currentStep - 1 (не ниже 0)
+// и удаление последней пары сообщений (user + assistant).
+// Возвращает обновлённую сессию или undefined, если сессия не найдена/истекла.
+export function goBack(id: string): WizardSession | undefined {
+  const session = getSession(id);
+  if (!session) return undefined;
+  if (session.currentStep > 0) {
+    session.currentStep -= 1;
+  }
+  if (session.messages.length >= 2) {
+    // Последняя пара — ответ пользователя и вопрос мастера к следующему шагу.
+    session.messages.splice(session.messages.length - 2, 2);
+  }
+  getStore().set(id, session);
+  return session;
+}
+
 export function appendMessage(id: string, message: ChatMessage): WizardSession | undefined {
   const session = getSession(id);
   if (!session) return undefined;

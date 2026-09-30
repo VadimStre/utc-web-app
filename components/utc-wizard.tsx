@@ -23,6 +23,7 @@ import {
   Loader2,
   Sparkles,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   X,
   ChevronDown,
@@ -47,6 +48,9 @@ export function UTCWizard({ onCancel, onCreated }: UTCWizardProps) {
   const [totalSteps, setTotalSteps] = useState(10);
   const [isSending, setIsSending] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // История ответов пользователя по шагам (для восстановления при кнопке «Назад»).
+  const [answersHistory, setAnswersHistory] = useState<string[]>([]);
+  const [isGoingBack, setIsGoingBack] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedUtcData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,6 +74,7 @@ export function UTCWizard({ onCancel, onCreated }: UTCWizardProps) {
       setCurrentQuestion(data.firstQuestion);
       setMessages([{ role: 'assistant', content: data.firstQuestion }]);
       setStep(1);
+      setAnswersHistory([]);
       setStage('dialog');
     } catch (error) {
       console.error('Ошибка запуска AI-мастера:', error);
@@ -86,6 +91,7 @@ export function UTCWizard({ onCancel, onCreated }: UTCWizardProps) {
     const updatedMessages: ChatMessage[] = [...messages, { role: 'user', content: trimmedAnswer }];
     setMessages(updatedMessages);
     setAnswer('');
+    setAnswersHistory((prev) => [...prev, trimmedAnswer]);
 
     try {
       const response = await fetch('/api/utc/wizard/answer', {
@@ -121,6 +127,7 @@ export function UTCWizard({ onCancel, onCreated }: UTCWizardProps) {
         // Откатываем последнее сообщение пользователя, чтобы он мог повторить ответ.
         setMessages(messages);
         setAnswer(trimmedAnswer);
+        setAnswersHistory((prev) => prev.slice(0, -1));
         return;
       }
 
@@ -138,8 +145,50 @@ export function UTCWizard({ onCancel, onCreated }: UTCWizardProps) {
       // Откатываем оптимистично добавленное сообщение пользователя при ошибке.
       setMessages(messages);
       setAnswer(trimmedAnswer);
+      setAnswersHistory((prev) => prev.slice(0, -1));
     } finally {
       setIsSending(false);
+    }
+  }
+
+  async function handleGoBack() {
+    if (!wizardSessionId || isSending || isGoingBack) return;
+    if (step <= 1) return;
+    setIsGoingBack(true);
+    const previousAnswer = answersHistory.length > 0 ? answersHistory[answersHistory.length - 1] : '';
+    try {
+      const response = await fetch('/api/utc/wizard/back', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wizardSessionId }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (data.expired) {
+          setErrorMessage(data.error || 'Сессия мастера истекла. Начните заново.');
+          setStage('error');
+          return;
+        }
+        throw new Error(data.error || 'Не удалось вернуться к предыдущему вопросу');
+      }
+
+      setCurrentQuestion(data.question);
+      setStep(data.step);
+      if (data.totalSteps) setTotalSteps(data.totalSteps);
+      // На сервере уже удалена последняя пара (user + assistant) — отражаем это в списке сообщений.
+      setMessages(messages.slice(0, -2));
+      setAnswer(previousAnswer);
+      setAnswersHistory((prev) => prev.slice(0, -1));
+    } catch (error) {
+      console.error('Ошибка возврата к предыдущему вопросу:', error);
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось вернуться к предыдущему вопросу',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGoingBack(false);
     }
   }
 
@@ -279,10 +328,22 @@ export function UTCWizard({ onCancel, onCreated }: UTCWizardProps) {
                   }}
                 />
                 <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={onCancel} disabled={isSending}>
+                  <Button
+                    variant="outline"
+                    onClick={handleGoBack}
+                    disabled={isSending || isGoingBack || step <= 1}
+                  >
+                    {isGoingBack ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                    )}
+                    Назад
+                  </Button>
+                  <Button variant="outline" onClick={onCancel} disabled={isSending || isGoingBack}>
                     Отмена
                   </Button>
-                  <Button onClick={handleSendAnswer} disabled={isSending || answer.trim() === ''}>
+                  <Button onClick={handleSendAnswer} disabled={isSending || isGoingBack || answer.trim() === ''}>
                     {isSending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />

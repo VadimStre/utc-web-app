@@ -23,8 +23,9 @@
 - `lib/wizard-prompts.ts`: systemPrompt пункт 4 и `questions.categories` обновлены аналогично.
 
 ## Из таска 02 — кнопка «назад» в AI-мастере
-- Новый API `POST /api/utc/wizard/back` (тело: `{ wizardSessionId }`) → откат currentStep на 1, удаление последней пары (user+assistant), возврат `{ question, step, totalSteps }`.
-- Клиент `utc-wizard.tsx`: кнопка «Назад» (неактивна на шаге 1), восстановление предыдущего вопроса и ответа.
+- Новый API `POST /api/utc/wizard/back` (тело: `{ wizardSessionId }`) → откат currentStep на 1, удаление последней пары (user+assistant), возврат `{ question, step, totalSteps }` (`question` — последнее assistant-сообщение после отката, `FIRST_QUESTION` если их нет; `step` — 1-based) + `{ expired: true }` при 404/410.
+- `lib/wizard-sessions.ts`: новая функция `goBack(id): WizardSession | undefined` — currentStep−1 (не ниже 0), удаление последних 2 сообщений.
+- Клиент `utc-wizard.tsx`: кнопка «Назад» (ArrowLeft, неактивна на шаге 1/isSending/isGoingBack), восстановление предыдущего вопроса и ответа (history ответов в state, `answersHistory`).
 
 ## Из таска 03 — скачивание .docx
 - Новая API `GET/POST /api/utc/[id]/alt-applications/export` → генерирует `.docx` (библиотека `docx`), заголовок: «8. Формулировка УТК» + разделы «Новые области для той же Функции», «Новые типы Продуктов», «Сводный рейтинг всех вариантов».

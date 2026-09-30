@@ -326,9 +326,9 @@ export default function HomePage() {
       <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
+            <div className="flex-1 text-center">
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                База данных УТК
+                Коммерциализация технологических компетенций
               </h1>
               <p className="text-muted-foreground">
                 Система управления уникальными технологическими компетенциями
