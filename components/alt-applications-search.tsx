@@ -11,7 +11,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Compass, ChevronDown, Sparkles, Star, ExternalLink } from 'lucide-react';
+import { Loader2, Compass, ChevronDown, Sparkles, Star, ExternalLink, Download } from 'lucide-react';
 
 interface AltApplicationsSearchProps {
   record: UTCRecord;
@@ -31,6 +31,7 @@ const LEVEL_STYLES: Record<AltApplicationVariant['scores']['feasibility'], strin
 
 export function AltApplicationsSearch({ record }: AltApplicationsSearchProps) {
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [result, setResult] = useState<AltApplicationsResult | null>(null);
   const [openFunctions, setOpenFunctions] = useState<Set<number>>(new Set());
 
@@ -78,6 +79,48 @@ export function AltApplicationsSearch({ record }: AltApplicationsSearchProps) {
     });
   };
 
+  const handleDownload = async () => {
+    if (!result) return;
+    setDownloading(true);
+    try {
+      const response = await fetch(`/api/utc/${record.id}/alt-applications/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ result }),
+      });
+
+      if (!response.ok) {
+        let message = 'Произошла ошибка при экспорте результатов.';
+        try {
+          const data = await response.json();
+          if (data?.error) message = data.error;
+        } catch {
+          // тело не JSON — оставляем сообщение по умолчанию
+        }
+        toast({ title: 'Не удалось скачать файл', description: message, variant: 'destructive' });
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `utc-alt-applications-${record.id}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: 'Ошибка сети',
+        description: 'Не удалось связаться с сервером для экспорта результатов.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <Card className="border-l-4 border-l-purple-500">
       <CardHeader>
@@ -109,6 +152,17 @@ export function AltApplicationsSearch({ record }: AltApplicationsSearchProps) {
 
         {result && (
           <div className="space-y-5">
+            {/* Кнопка скачивания .docx */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={handleDownload} disabled={downloading} variant="outline" size="sm">
+                {downloading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Скачать
+              </Button>
+            </div>
             {/* Новые области для той же Функции */}
             <div className="space-y-2">
               <h4 className="text-sm font-semibold flex items-center gap-2">
