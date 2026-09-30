@@ -11,7 +11,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Compass, ChevronDown, Sparkles, Star } from 'lucide-react';
+import { Loader2, Compass, ChevronDown, Sparkles, Star, ExternalLink } from 'lucide-react';
 
 interface AltApplicationsSearchProps {
   record: UTCRecord;
@@ -190,6 +190,22 @@ export function AltApplicationsSearch({ record }: AltApplicationsSearchProps) {
                         Экон. целесообразность: {LEVEL_LABELS[v.scores.economicFeasibility]}
                       </Badge>
                     </div>
+                    {v.sources && v.sources.length > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        {v.sources.map((src, k) => (
+                          <a
+                            key={k}
+                            href={src.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-purple-700 hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            {src.title ? `Источник: ${src.title}` : 'Источник'}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

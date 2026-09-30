@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { CompetitorSearch } from '@/components/competitor-search';
 import { AltApplicationsSearch } from '@/components/alt-applications-search';
 import { X, Calendar, Building, Cog } from 'lucide-react';
+import { AdvantagesContent } from '@/lib/format-advantages';
 
 interface UTCViewProps {
   open: boolean;
@@ -90,10 +91,16 @@ export function UTCView({ open, onClose, record, onRecordUpdated }: UTCViewProps
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
+                  {field === 'advantages' ? (
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                      <AdvantagesContent text={value || 'Не заполнено'} />
+                    </div>
+                  ) : (
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
                       {value || 'Не заполнено'}
                     </p>
-                  </CardContent>
+                  )}
+                </CardContent>
                 </Card>
               );
             })}
@@ -140,7 +147,9 @@ export function UTCView({ open, onClose, record, onRecordUpdated }: UTCViewProps
               </div>
               <div>
                 <span className="text-muted-foreground">Преимущества:</span>
-                <p className="font-medium">{record.advantages}</p>
+                <div className="font-medium whitespace-pre-wrap">
+                  <AdvantagesContent text={record.advantages} />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -157,9 +166,11 @@ export function UTCView({ open, onClose, record, onRecordUpdated }: UTCViewProps
             />
           )}
 
-          {/* Поиск альтернативных областей применения / новых рынков (Этап 5) — доступно всем,
-              это просмотр/аналитика, а не изменение данных записи. */}
-          <AltApplicationsSearch record={record} />
+          {/* Поиск альтернативных областей применения / новых рынков (Этап 5) — доступно
+              только автору записи или админу (как и поиск конкурентов). */}
+          {record.canEdit && (
+            <AltApplicationsSearch record={record} />
+          )}
         </div>
       </DialogContent>
     </Dialog>

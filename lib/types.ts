@@ -147,9 +147,39 @@ export interface AppSettingsDTO {
   localLlmModel: string;
 }
 
+// ===== Админ: пользователи и их УТК (Этап 7, R11) =====
+
+export type UserRole = 'ADMIN' | 'USER';
+
+export interface AdminUserRecord {
+  id: number;
+  formulation: string;
+  keyProduct: string;
+  createdAt: string;
+}
+
+export interface AdminUserDTO {
+  id: string;
+  email: string;
+  name: string | null;
+  role: UserRole;
+  createdAt: string;
+  records: AdminUserRecord[];
+}
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  ADMIN: 'Администратор',
+  USER: 'Пользователь',
+};
+
 // ===== Поиск альтернативных областей применения / новых рынков (Этап 5) =====
 
 export type FeasibilityLevel = 'low' | 'medium' | 'high';
+
+export interface AltApplicationSource {
+  title: string;
+  url: string;
+}
 
 export interface AltApplicationVariant {
   description: string;
@@ -162,6 +192,8 @@ export interface AltApplicationVariant {
   };
   totalScore: number;
   recommended: boolean;
+  // Ссылки на внешние источники (R06): 1-2 веб-результата для рекомендованных вариантов.
+  sources?: AltApplicationSource[];
 }
 
 export interface AltApplicationsNewFunction {

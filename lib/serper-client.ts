@@ -21,7 +21,10 @@ export class SerperApiError extends Error {
  * Не бросает "сырые" исключения наружу за пределами этого модуля вызывающему коду —
  * все ошибки оборачиваются в SerperApiError с понятным сообщением на русском.
  */
-export async function searchCompetitors(query: string): Promise<SerperOrganicResult[]> {
+export async function searchCompetitors(
+  query: string,
+  num: number = 10
+): Promise<SerperOrganicResult[]> {
   const apiKey = process.env.SERPER_API_KEY;
   if (!apiKey || apiKey.trim() === '' || apiKey === 'your-serper-api-key-here') {
     throw new SerperApiError(
@@ -45,7 +48,7 @@ export async function searchCompetitors(query: string): Promise<SerperOrganicRes
         'X-API-KEY': apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ q: query, num: 10 }),
+      body: JSON.stringify({ q: query, num }),
       signal: controller.signal,
     });
   } catch (error) {

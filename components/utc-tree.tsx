@@ -86,7 +86,7 @@ function UTCTreeNodeItem({ node, level, onView, onEdit, onAddChild }: UTCTreeNod
               {UTC_NODE_TYPE_LABELS[nodeType]}
             </Badge>
             <Badge variant="outline">ID: {node.id}</Badge>
-            <span className="font-medium text-sm">{title}</span>
+            <span className="font-semibold text-sm bg-primary/10 rounded px-1 py-0.5">{title}</span>
           </div>
 
           {node.decompositionCharacteristic && (

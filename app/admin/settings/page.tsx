@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, TestTube2, Loader2 } from "lucide-react";
 import Link from "next/link";
-import type { LlmProvider, AppSettingsDTO } from "@/lib/types";
+import type { LlmProvider, AppSettingsDTO, AdminUserDTO } from "@/lib/types";
+import { AdminUsersTable } from "@/components/admin-users-table";
 
 export default function AdminSettingsPage() {
   const { data: session, status } = useSession();
@@ -25,6 +27,11 @@ export default function AdminSettingsPage() {
   const [llmProvider, setLlmProvider] = useState<LlmProvider>("cloud");
   const [localLlmBaseUrl, setLocalLlmBaseUrl] = useState("http://localhost:11434");
   const [localLlmModel, setLocalLlmModel] = useState("llama3.1");
+
+  // Пользователи и УТК
+  const [users, setUsers] = useState<AdminUserDTO[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
 
   // Redirect non-admin
   useEffect(() => {
@@ -48,6 +55,35 @@ export default function AdminSettingsPage() {
         toast({ title: "Ошибка", description: "Не удалось загрузить настройки LLM", variant: "destructive" });
       })
       .finally(() => setLoading(false));
+  }, [isAdmin]);
+
+  const loadUsers = async () => {
+    setUsersLoading(true);
+    setUsersError(null);
+    try {
+      const res = await fetch("/api/admin/users");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Ошибка загрузки пользователей");
+      }
+      const data: AdminUserDTO[] = await res.json();
+      setUsers(data);
+    } catch (error) {
+      setUsersError(error instanceof Error ? error.message : "Не удалось загрузить пользователей");
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить пользователей",
+        variant: "destructive",
+      });
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   const handleSave = async () => {
@@ -133,83 +169,99 @@ export default function AdminSettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Настройки LLM</CardTitle>
+            <CardTitle>Администрирование</CardTitle>
             <CardDescription>
-              Глобальный переключатель источника языковой модели. Влияет на все
-              функции AI в системе: мастер ввода УТК, поиск конкурентов, поиск
-              альтернативных применений.
+              Настройки системы и данные пользователей.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <RadioGroup
-              value={llmProvider}
-              onValueChange={(v) => setLlmProvider(v as LlmProvider)}
-              className="space-y-3"
-            >
-              <div className="flex items-center space-x-3 rounded-md border p-4">
-                <RadioGroupItem value="cloud" id="cloud" />
-                <Label htmlFor="cloud" className="flex-1 cursor-pointer">
-                  <div className="font-medium">☁️ Облачная LLM (Abacus.ai)</div>
-                  <div className="text-sm text-muted-foreground">
-                    Используется API Abacus.ai RouteLLM. Требуется ключ ABACUS_API_KEY.
-                  </div>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 rounded-md border p-4">
-                <RadioGroupItem value="local" id="local" />
-                <Label htmlFor="local" className="flex-1 cursor-pointer">
-                  <div className="font-medium">🖥️ Локальная LLM (Ollama)</div>
-                  <div className="text-sm text-muted-foreground">
-                    Используется локально запущенный Ollama. Данные не покидают сервер.
-                  </div>
-                </Label>
-              </div>
-            </RadioGroup>
+          <CardContent>
+            <Tabs defaultValue="llm">
+              <TabsList className="mb-4">
+                <TabsTrigger value="llm">Настройки LLM</TabsTrigger>
+                <TabsTrigger value="users">Пользователи и УТК</TabsTrigger>
+              </TabsList>
 
-            {llmProvider === "local" && (
-              <div className="space-y-4 rounded-md border p-4 bg-muted/30">
-                <div className="space-y-2">
-                  <Label htmlFor="baseUrl">URL сервера Ollama</Label>
-                  <Input
-                    id="baseUrl"
-                    value={localLlmBaseUrl}
-                    onChange={(e) => setLocalLlmBaseUrl(e.target.value)}
-                    placeholder="http://localhost:11434"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="model">Модель</Label>
-                  <Input
-                    id="model"
-                    value={localLlmModel}
-                    onChange={(e) => setLocalLlmModel(e.target.value)}
-                    placeholder="llama3.1"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Модель должна быть предварительно скачана: ollama pull {localLlmModel}
-                  </p>
-                </div>
-              </div>
-            )}
+              <TabsContent value="llm" className="space-y-6">
+                <RadioGroup
+                  value={llmProvider}
+                  onValueChange={(v) => setLlmProvider(v as LlmProvider)}
+                  className="space-y-3"
+                >
+                  <div className="flex items-center space-x-3 rounded-md border p-4">
+                    <RadioGroupItem value="cloud" id="cloud" />
+                    <Label htmlFor="cloud" className="flex-1 cursor-pointer">
+                      <div className="font-medium">☁️ Облачная LLM (Abacus.ai)</div>
+                      <div className="text-sm text-muted-foreground">
+                        Используется API Abacus.ai RouteLLM. Требуется ключ ABACUS_API_KEY.
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 rounded-md border p-4">
+                    <RadioGroupItem value="local" id="local" />
+                    <Label htmlFor="local" className="flex-1 cursor-pointer">
+                      <div className="font-medium">🖥️ Локальная LLM (Ollama)</div>
+                      <div className="text-sm text-muted-foreground">
+                        Используется локально запущенный Ollama. Данные не покидают сервер.
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
 
-            <div className="flex gap-3">
-              <Button onClick={handleTest} variant="outline" disabled={testing}>
-                {testing ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <TestTube2 className="h-4 w-4 mr-2" />
+                {llmProvider === "local" && (
+                  <div className="space-y-4 rounded-md border p-4 bg-muted/30">
+                    <div className="space-y-2">
+                      <Label htmlFor="baseUrl">URL сервера Ollama</Label>
+                      <Input
+                        id="baseUrl"
+                        value={localLlmBaseUrl}
+                        onChange={(e) => setLocalLlmBaseUrl(e.target.value)}
+                        placeholder="http://localhost:11434"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="model">Модель</Label>
+                      <Input
+                        id="model"
+                        value={localLlmModel}
+                        onChange={(e) => setLocalLlmModel(e.target.value)}
+                        placeholder="llama3.1"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Модель должна быть предварительно скачана: ollama pull {localLlmModel}
+                      </p>
+                    </div>
+                  </div>
                 )}
-                Проверить подключение
-              </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                Сохранить
-              </Button>
-            </div>
+
+                <div className="flex gap-3">
+                  <Button onClick={handleTest} variant="outline" disabled={testing}>
+                    {testing ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <TestTube2 className="h-4 w-4 mr-2" />
+                    )}
+                    Проверить подключение
+                  </Button>
+                  <Button onClick={handleSave} disabled={saving}>
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Сохранить
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="users">
+                <AdminUsersTable
+                  users={users}
+                  loading={usersLoading}
+                  error={usersError}
+                  onRetry={loadUsers}
+                />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>

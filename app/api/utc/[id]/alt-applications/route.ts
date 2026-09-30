@@ -5,7 +5,8 @@ import { prisma } from '@/lib/db';
 import { callLLM, LlmApiError } from '@/lib/llm-client';
 import { buildAltApplicationsPrompt } from '@/lib/alt-applications-prompt';
 import { scoreVariants, rankAndFilter, type RawVariant } from '@/lib/alt-applications-filter';
-import type { AltApplicationsNewFunction, AltApplicationsResult } from '@/lib/types';
+import { searchCompetitors } from '@/lib/serper-client';
+import type { AltApplicationSource, AltApplicationVariant, AltApplicationsNewFunction, AltApplicationsResult } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +53,61 @@ function tryParseAltApplicationsJson(raw: string): ParsedAltApplications | null 
 
 // POST /api/utc/[id]/alt-applications — поиск альтернативных областей применения (новых рынков)
 // на основе уникальной технологической компетенции записи. Просмотр/аналитика — БД не изменяется.
+// Шаг 7 (R06): для рекомендованных вариантов (топ по баллу, лимит ~5) ищем в вебе (Serper)
+// по описанию варианта и прикрепляем 1-2 ссылки на источники. Каждый поиск обёрнут в try/catch
+// (таймаут/отсутствие ключа не ломают основной ответ) — при неудаче вариант остаётся без sources.
+async function attachSourcesToRecommended(
+  variants: AltApplicationVariant[]
+): Promise<void> {
+  // Кандидаты: сначала явно рекомендованные, затем оставшиеся топ по totalScore (лимит ~5).
+  const candidateCount = 5;
+  const candidates: AltApplicationVariant[] = [];
+  for (const v of variants) {
+    if (candidates.length >= candidateCount) break;
+    if (v.recommended) candidates.push(v);
+  }
+  if (candidates.length < candidateCount) {
+    const byScore = [...variants]
+      .filter((v) => !v.recommended)
+      .sort((a, b) => b.totalScore - a.totalScore);
+    for (const v of byScore) {
+      if (candidates.length >= candidateCount) break;
+      candidates.push(v);
+    }
+  }
+
+  const sourcesByDescription = new Map<string, AltApplicationSource[]>();
+
+  await Promise.allSettled(
+    candidates.map(async (v) => {
+      const query = `области применения ${v.description}`.trim();
+      let results;
+      try {
+        results = await searchCompetitors(query, 3);
+      } catch {
+        return; // Serper недоступен/ошибка — пропускаем вариант, основной ответ не ломаем
+      }
+
+      const organic = results
+        .filter((r) => r && typeof r.title === 'string' && typeof r.link === 'string' && r.link.trim() !== '')
+        .slice(0, 2)
+        .map((r) => ({ title: r.title.trim(), url: r.link.trim() }));
+
+      if (organic.length > 0) {
+        sourcesByDescription.set(v.description, organic);
+      }
+    })
+  );
+
+  // Прикрепить найденные источники к вариантам в исходном списке (в т.ч. к тем, что не входили в лимит).
+  for (const v of variants) {
+    const sources = sourcesByDescription.get(v.description);
+    if (sources && sources.length > 0) {
+      v.sources = sources;
+    }
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -71,6 +127,16 @@ export async function POST(
     const record = await prisma.uTCRecord.findUnique({ where: { id } });
     if (!record) {
       return NextResponse.json({ error: 'Запись УТК не найдена' }, { status: 404 });
+    }
+
+    // Доступ только автору записи или администратору. Системные записи (ownerId=null) — только админу.
+    const isAdmin = session.user.role === 'ADMIN';
+    const isOwner = record.ownerId === session.user.id;
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json(
+        { error: 'Доступ только для автора записи или администратора' },
+        { status: 403 }
+      );
     }
 
     // Шаг 1-2: сформировать точный промпт из ТЗ на основе данных записи и вызвать Abacus.ai.
@@ -144,6 +210,10 @@ export async function POST(
         throw error;
       }
     }
+
+    // Шаг 7 (R06): прикрепить ссылки на источники для рекомендованных/топ вариантов
+    // (Serper, лимит ~5 поисков, каждая ошибка проглатывается — основной ответ не ломаем).
+    await attachSourcesToRecommended(allVariantsRanked);
 
     const result: AltApplicationsResult = {
       alternativeObjects: parsed.alternativeObjects,

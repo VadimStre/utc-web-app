@@ -68,6 +68,16 @@ export async function POST(
       return NextResponse.json({ error: 'Запись УТК не найдена' }, { status: 404 });
     }
 
+    // Доступ только автору записи или администратору. Системные записи (ownerId=null) — только админу.
+    const isAdmin = session.user.role === 'ADMIN';
+    const isOwner = record.ownerId === session.user.id;
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json(
+        { error: 'Доступ только для автора записи или администратора' },
+        { status: 403 }
+      );
+    }
+
     let additionalContext = '';
     try {
       const body = await request.json();

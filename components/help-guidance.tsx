@@ -187,7 +187,9 @@ export function HelpGuidance() {
                       </div>
                       <div>
                         <strong>Преимущества:</strong>
-                        <p className="mt-1 font-medium text-green-700">{example.advantages}</p>
+                        <div className="mt-1 font-medium text-green-700 whitespace-pre-wrap">
+                          {example.advantages}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
