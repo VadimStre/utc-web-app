@@ -22,4 +22,8 @@
 
 Если работа продолжается — скажи «продолжи автопилот»: состояние поднимется
 из `.autopilot/state.js`, переспрашивать ничего не нужно.
+
+Стек: Next.js 14 (App Router), TypeScript, Prisma+PostgreSQL, NextAuth, shadcn/ui, Tailwind.
+Хостинг: Timeweb VPS 104.171.129.12 (http); SSH снаружи закрыт — только веб-консоль.
+Прод задеплоен 30.09 (коммит 7e03c18); активный autopilot-прогон — 2026-10-02-utc-upgrade2--wip (TZ.docx).
 <!-- autopilot:end -->
