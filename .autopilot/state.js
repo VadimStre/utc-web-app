@@ -11,20 +11,20 @@ window.STATE =
   "memoryFile": "AGENTS.md",
   "skillDir": "C:/Users/Latin/AppData/Local/hermes/skills/autopilot",
   "startedAt": "2026-10-02T17:30:38+03:00",
-  "updatedAt": "2026-10-02T17:32:00+03:00",
+  "updatedAt": "2026-10-02T17:41:00+03:00",
   "finishedAt": null,
   "stages": [
     { "id": "preflight", "status": "done", "finishedAt": "2026-10-02T17:30:38+03:00" },
-    { "id": "manifest",  "status": "active", "startedAt": "2026-10-02T17:30:38+03:00" },
-    { "id": "briefing",  "status": "pending" },
-    { "id": "spec",      "status": "pending" },
-    { "id": "plan",      "status": "pending" },
+    { "id": "manifest",  "status": "done", "finishedAt": "2026-10-02T17:32:00+03:00" },
+    { "id": "briefing",  "status": "done", "finishedAt": "2026-10-02T17:33:00+03:00", "note": "5 вопросов (формат примеров, дерево, 2 экспорта)" },
+    { "id": "spec",      "status": "done", "finishedAt": "2026-10-02T17:40:00+03:00", "note": "G2 пройден (ревьюер: 3 неполных → уточнены)" },
+    { "id": "plan",      "status": "active", "startedAt": "2026-10-02T17:40:00+03:00" },
     { "id": "build",     "status": "pending" },
     { "id": "review",    "status": "pending" },
     { "id": "final",     "status": "pending" }
   ],
   "requirements": {
-    "total": 6, "done": 0, "inTicket": 0, "inSpec": 0,
+    "total": 6, "done": 0, "inTicket": 0, "inSpec": 6,
     "placeholder": 0, "deferred": 0, "dropped": 0
   },
   "tickets": [],
