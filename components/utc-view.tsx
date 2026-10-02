@@ -13,8 +13,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CompetitorSearch } from '@/components/competitor-search';
 import { AltApplicationsSearch } from '@/components/alt-applications-search';
-import { X, Calendar, Building, Cog } from 'lucide-react';
+import { X, Calendar, Building, Cog, Download } from 'lucide-react';
 import { AdvantagesContent } from '@/lib/format-advantages';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface UTCViewProps {
   open: boolean;
@@ -24,6 +27,7 @@ interface UTCViewProps {
 }
 
 export function UTCView({ open, onClose, record, onRecordUpdated }: UTCViewProps) {
+  const [downloading, setDownloading] = useState(false);
   if (!record) return null;
 
   const formatDate = (date: Date | string | undefined) => {
@@ -38,6 +42,48 @@ export function UTCView({ open, onClose, record, onRecordUpdated }: UTCViewProps
     });
   };
 
+  const handleDownload = async () => {
+    if (!record?.id) return;
+    setDownloading(true);
+    try {
+      const response = await fetch(`/api/utc/${record.id}/export-html`);
+
+      if (!response.ok) {
+        let message = 'Не удалось скачать карточку УТК.';
+        try {
+          const data = await response.json();
+          if (data?.error) message = data.error;
+        } catch {
+          // тело не JSON — оставляем сообщение по умолчанию
+        }
+        toast({ title: 'Ошибка', description: message, variant: 'destructive' });
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `utc-${record.id}.html`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({ title: 'Успех', description: 'Карточка УТК скачана в формате HTML' });
+    } catch (error) {
+      console.error('Ошибка скачивания карточки:', error);
+      toast({
+        title: 'Ошибка сети',
+        description: 'Не удалось связаться с сервером для скачивания карточки.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -48,9 +94,20 @@ export function UTCView({ open, onClose, record, onRecordUpdated }: UTCViewProps
               <span>Просмотр записи УТК</span>
               <Badge variant="outline">ID: {record.id}</Badge>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              {record.canEdit && (
+                <Button variant="ghost" size="icon" onClick={handleDownload} disabled={downloading} title="Скачать карточку в HTML">
+                  {downloading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 

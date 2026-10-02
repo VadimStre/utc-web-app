@@ -212,7 +212,7 @@ export default function HomePage() {
   };
 
   // Экспорт данных
-  const handleExport = async (format: 'json' | 'csv') => {
+  const handleExport = async (format: 'json' | 'html') => {
     try {
       const params = new URLSearchParams({
         format,

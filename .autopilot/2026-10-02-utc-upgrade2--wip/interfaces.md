@@ -34,13 +34,13 @@
 #### Таск 02 — дерево
 - Только `components/utc-tree.tsx`: линии-ветви слева (CSS `border-l` + псевдоэлементы `/absolute`), у последнего ребёнка — излом, у узла без детей — нет ветки. Отступ = level * 24px + линия. Состав узла (бейджи, ID) не менять.
 
-#### Таск 03 — экспорт HTML
-- **Новый** `lib/export-html.ts`: две функции рендера (список/карточка), inline-CSS, экранирование, без внешних ссылок.
-- `app/api/utc/export/route.ts`: `format === 'html'` (вместо CSV) → `utc_records.html`; JSON не тронут.
-- **Новый** `app/api/utc/[id]/export-html/route.ts`: GET, auth как в alt-applications/competitors (401/403/404), `utc-<id>.html`.
-- `components/search-filters.tsx`: кнопка «HTML» вместо «CSV» (вызывает `onExport('html')`).
-- `app/page.tsx`: `handleExport(format: 'json' | 'html')`, имя файла `utc_records.<format>`.
-- `components/utc-view.tsx`: кнопка «Скачать» (Download) в шапке карточки → GET на export-html → blob → download.
+## Из таска 03 — экспорт HTML
+- **Новый** `lib/export-html.ts`: `renderUtcHtmlList(records: UTCRecord[]): string` (реестр), `renderUtcHtmlRecord(record: UTCRecord): string` (карточка); самодостаточные документы (inline-CSS, без внешних ссылок), экранирование полей.
+- `app/api/utc/export/route.ts`: CSV удалён; `format === 'html'` → `utc_records.html`; JSON не тронут.
+- **Новый** `app/api/utc/[id]/export-html/route.ts`: GET; auth (401) → 404 (нет записи) → 403 (не автор/не админ); `utc-<id>.html`.
+- `components/search-filters.tsx`: кнопка «HTML» (FileCode) вместо «CSV», `onExport('html')`.
+- `app/page.tsx`: `handleExport(format: 'json' | 'html')`, имя `utc_records.<format>`.
+- `components/utc-view.tsx`: кнопка «Скачать» (Download) в шапке карточки, видна при `record.canEdit`; GET export-html → blob → download.
 
 ## Швы для тестов
 - Сборка `npm run build` (typecheck по всем файлам) — главный шов.

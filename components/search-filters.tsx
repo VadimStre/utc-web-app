@@ -6,11 +6,11 @@ import { SearchFilters as SearchFiltersType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Filter, Download, X, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Search, Filter, Download, X, FileJson, FileCode } from 'lucide-react';
 
 interface SearchFiltersProps {
   onSearch: (filters: SearchFiltersType) => void;
-  onExport: (format: 'json' | 'csv') => void;
+  onExport: (format: 'json' | 'html') => void;
   isLoading?: boolean;
 }
 
@@ -119,11 +119,11 @@ export function SearchFilters({ onSearch, onExport, isLoading = false }: SearchF
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onExport('csv')}
+                    onClick={() => onExport('html')}
                     className="flex items-center gap-2"
                   >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    CSV
+                    <FileCode className="h-4 w-4" />
+                    HTML
                   </Button>
                 </div>
               </div>

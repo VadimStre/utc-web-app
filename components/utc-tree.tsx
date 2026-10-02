@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { UTCTreeNode, UtcNodeType, UTC_NODE_TYPE_LABELS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +37,8 @@ export function UTCTree({ nodes, onView, onEdit, onAddChild }: UTCTreeProps) {
           key={node.id}
           node={node}
           level={0}
+          isLast={false}
+          ancestorNonLast={[]}
           onView={onView}
           onEdit={onEdit}
           onAddChild={onAddChild}
@@ -49,12 +51,14 @@ export function UTCTree({ nodes, onView, onEdit, onAddChild }: UTCTreeProps) {
 interface UTCTreeNodeItemProps {
   node: UTCTreeNode;
   level: number;
+  isLast: boolean;
+  ancestorNonLast: boolean[];
   onView: (node: UTCTreeNode) => void;
   onEdit: (node: UTCTreeNode) => void;
   onAddChild: (parent: UTCTreeNode) => void;
 }
 
-function UTCTreeNodeItem({ node, level, onView, onEdit, onAddChild }: UTCTreeNodeItemProps) {
+function UTCTreeNodeItem({ node, level, isLast, ancestorNonLast, onView, onEdit, onAddChild }: UTCTreeNodeItemProps) {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = !!node.children && node.children.length > 0;
   const nodeType = (node.nodeType || 'PRODUCT') as UtcNodeType;
@@ -64,9 +68,17 @@ function UTCTreeNodeItem({ node, level, onView, onEdit, onAddChild }: UTCTreeNod
   return (
     <div>
       <div
-        className="flex items-start gap-2 py-2 pr-2 rounded-md hover:bg-muted/40 transition-colors"
+        className="relative flex items-start gap-2 py-2 pr-2 rounded-md hover:bg-muted/40 transition-colors"
         style={{ paddingLeft: `${level * 24}px` }}
       >
+        {level > 0 && (
+          <TreeBranch
+            level={level}
+            isLast={isLast}
+            hasChildren={hasChildren}
+            ancestorNonLast={ancestorNonLast}
+          />
+        )}
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
@@ -118,18 +130,87 @@ function UTCTreeNodeItem({ node, level, onView, onEdit, onAddChild }: UTCTreeNod
 
       {hasChildren && expanded && (
         <div>
-          {(node.children as UTCTreeNode[]).map((child) => (
-            <UTCTreeNodeItem
-              key={child.id}
-              node={child}
-              level={level + 1}
-              onView={onView}
-              onEdit={onEdit}
-              onAddChild={onAddChild}
-            />
-          ))}
+          {(node.children as UTCTreeNode[]).map((child, index) => {
+            const isChildLast = index === node.children!.length - 1;
+            return (
+              <UTCTreeNodeItem
+                key={child.id}
+                node={child}
+                level={level + 1}
+                isLast={isChildLast}
+                ancestorNonLast={[...ancestorNonLast, !isLast]}
+                onView={onView}
+                onEdit={onEdit}
+                onAddChild={onAddChild}
+              />
+            );
+          })}
         </div>
       )}
+    </div>
+  );
+}
+
+interface TreeBranchProps {
+  level: number;
+  isLast: boolean;
+  hasChildren: boolean;
+  ancestorNonLast: boolean[];
+}
+
+/**
+ * Линии-ветви в стиле псевдографики (├── / └── / │) слева от узла.
+ * Каждый уровень вложенности — колонка шириной 24px (совпадает с отступом строки level*24):
+ *  - колонки предков (1..level-1): вертикаль «│», пока предок не последний ребёнок
+ *    (ветка продолжается к следующему сиблингу), иначе пусто;
+ *  - собственная колонка (level): у узла с детьми — излом «├» (не последний) или
+ *    «└» (последний, ветка заканчивается) плюс горизонтальный отросток к содержимому;
+ *  - у узла без детей излом-«кончик» не рисуется: только вертикальная соединительная
+ *    линия «│», если ветка продолжается к следующему сиблингу, иначе ничего.
+ */
+function TreeBranch({ level, isLast, hasChildren, ancestorNonLast }: TreeBranchProps) {
+  const segs: ReactNode[] = [];
+  for (let j = 1; j < level; j++) {
+    segs.push(
+      <div
+        key={`anc-${j}`}
+        className={cn(
+          'w-6 shrink-0 self-stretch border-l-2',
+          ancestorNonLast[j - 1] ? 'border-border' : 'border-transparent'
+        )}
+      />
+    );
+  }
+  if (hasChildren) {
+    segs.push(
+      <div key="own" className="relative w-6 shrink-0 self-stretch">
+        <div className="absolute inset-x-0 top-0 h-1/2 border-l-2 border-border" />
+        <div
+          className={cn(
+            'absolute inset-x-0 bottom-0 h-1/2 border-l-2',
+            isLast ? 'border-transparent' : 'border-border'
+          )}
+        />
+        <div className="absolute inset-x-0 top-1/2 border-t-2 border-border" />
+      </div>
+    );
+  } else {
+    segs.push(
+      <div
+        key="own"
+        className={cn(
+          'w-6 shrink-0 self-stretch border-l-2',
+          isLast ? 'border-transparent' : 'border-border'
+        )}
+      />
+    );
+  }
+
+  return (
+    <div className="absolute inset-y-0 left-0 flex items-stretch">
+      <div className="flex h-full items-stretch" style={{ width: `${level * 24}px` }}>
+        {segs}
+      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ window.STATE =
   "memoryFile": "AGENTS.md",
   "skillDir": "C:/Users/Latin/AppData/Local/hermes/skills/autopilot",
   "startedAt": "2026-10-02T17:30:38+03:00",
-  "updatedAt": "2026-10-02T17:45:00+03:00",
+  "updatedAt": "2026-10-02T18:51:00+03:00",
   "finishedAt": null,
   "stages": [
     { "id": "preflight", "status": "done", "finishedAt": "2026-10-02T17:30:38+03:00" },
@@ -24,13 +24,13 @@ window.STATE =
     { "id": "final",     "status": "pending" }
   ],
   "requirements": {
-    "total": 6, "done": 0, "inTicket": 6, "inSpec": 0,
+    "total": 6, "done": 6, "inTicket": 0, "inSpec": 0,
     "placeholder": 0, "deferred": 0, "dropped": 0
   },
   "tickets": [
-    { "id": "01", "title": "Нумерация поля 4 + примеры категорий (R01, R02, R03)", "requirements": ["R01", "R02", "R03"], "blockedBy": [], "wave": 1, "zone": ["lib/types.ts", "lib/wizard-prompts.ts", "components/help-guidance.tsx"], "status": "pending", "retries": 0, "repairs": 0, "handoffs": 0 },
-    { "id": "02", "title": "Дерево: выразительные связи (R04)", "requirements": ["R04"], "blockedBy": [], "wave": 1, "zone": ["components/utc-tree.tsx"], "status": "pending", "retries": 0, "repairs": 0, "handoffs": 0 },
-    { "id": "03", "title": "Экспорт в HTML: реестр и карточка (R05, R06)", "requirements": ["R05", "R06"], "blockedBy": ["01"], "wave": 2, "zone": ["lib/export-html.ts", "app/api/utc/export", "app/api/utc/[id]/export-html", "components/search-filters.tsx", "components/utc-view.tsx", "app/page.tsx"], "status": "pending", "retries": 0, "repairs": 0, "handoffs": 0 }
+    { "id": "01", "title": "Нумерация поля 4 + примеры категорий (R01, R02, R03)", "requirements": ["R01", "R02", "R03"], "blockedBy": [], "wave": 1, "zone": ["lib/types.ts", "lib/wizard-prompts.ts", "components/help-guidance.tsx"], "status": "done", "finishedAt": "2026-10-02T18:45:00+03:00", "retries": 0, "repairs": 0, "handoffs": 0, "startedAt": "2026-10-02T17:46:00+03:00" },
+    { "id": "02", "title": "Дерево: выразительные связи (R04)", "requirements": ["R04"], "blockedBy": [], "wave": 1, "zone": ["components/utc-tree.tsx"], "status": "done", "finishedAt": "2026-10-02T18:45:00+03:00", "retries": 0, "repairs": 0, "handoffs": 0, "startedAt": "2026-10-02T17:46:00+03:00" },
+    { "id": "03", "title": "Экспорт в HTML: реестр и карточка (R05, R06)", "requirements": ["R05", "R06"], "blockedBy": ["01"], "wave": 2, "zone": ["lib/export-html.ts", "app/api/utc/export", "app/api/utc/[id]/export-html", "components/search-filters.tsx", "components/utc-view.tsx", "app/page.tsx"], "status": "done", "finishedAt": "2026-10-02T18:50:00+03:00", "retries": 0, "repairs": 0, "handoffs": 0, "startedAt": "2026-10-02T18:40:00+03:00" }
   ],
   "singlePass": null,
   "tests": null,
