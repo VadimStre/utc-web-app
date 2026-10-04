@@ -461,7 +461,7 @@ export default function HomePage() {
           <CardHeader>
             <CardTitle className="text-lg">Поиск и фильтрация</CardTitle>
             <CardDescription>
-              Найдите нужные записи УТК или экспортируйте данные
+              Найдите нужные записи УТК
             </CardDescription>
           </CardHeader>
           <CardContent>
