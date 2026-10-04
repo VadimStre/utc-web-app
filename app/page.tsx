@@ -261,6 +261,7 @@ export default function HomePage() {
     setIsTreeLoading(true);
     setTreeError(null);
     const maxAttempts = 3;
+    let succeeded = false;
     try {
       const response = await fetch('/api/utc/tree');
       if (!response.ok) {
@@ -268,6 +269,7 @@ export default function HomePage() {
       }
       const data = await response.json();
       setTreeData(data.tree || []);
+      succeeded = true;
     } catch (error) {
       console.error('Ошибка загрузки дерева:', error);
       if (attempt < maxAttempts) {
@@ -277,7 +279,10 @@ export default function HomePage() {
       }
       setTreeError('Не удалось загрузить дерево УТК. Попробуйте обновить страницу.');
     } finally {
-      if (attempt === maxAttempts) {
+      // Спиннер снимаем: при успехе (данные уже в состоянии) ИЛИ после последней попытки.
+      // ВАЖНО: раньше условие было только attempt === maxAttempts — из-за этого на успешной
+      // первой попытке loading оставался true навсегда и дерево «вечно грузилось».
+      if (succeeded || attempt === maxAttempts) {
         setIsTreeLoading(false);
       }
     }
