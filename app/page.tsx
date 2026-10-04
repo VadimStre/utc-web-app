@@ -255,22 +255,31 @@ export default function HomePage() {
     fetchRecords(searchFilters, page);
   };
 
-  // Загрузка дерева УТК (Этап 2)
-  const fetchTree = async () => {
+  // Загрузка дерева УТК (Этап 2) — с авто-повтором при сетевом/серверном сбое,
+  // чтобы редкий сбой не показывал «Не удалось загрузить дерево УТК» с первого раза.
+  const fetchTree = async (attempt = 1) => {
     setIsTreeLoading(true);
     setTreeError(null);
+    const maxAttempts = 3;
     try {
       const response = await fetch('/api/utc/tree');
       if (!response.ok) {
-        throw new Error('Ошибка загрузки дерева УТК');
+        throw new Error(`Ошибка загрузки дерева УТК (HTTP ${response.status})`);
       }
       const data = await response.json();
       setTreeData(data.tree || []);
     } catch (error) {
       console.error('Ошибка загрузки дерева:', error);
-      setTreeError('Не удалось загрузить дерево УТК');
+      if (attempt < maxAttempts) {
+        // повтор через 700ms — покрывает кратковременный сбой пересборки/сети
+        setTimeout(() => fetchTree(attempt + 1), 700);
+        return;
+      }
+      setTreeError('Не удалось загрузить дерево УТК. Попробуйте обновить страницу.');
     } finally {
-      setIsTreeLoading(false);
+      if (attempt === maxAttempts) {
+        setIsTreeLoading(false);
+      }
     }
   };
 
@@ -552,7 +561,7 @@ export default function HomePage() {
                   <div className="flex items-center gap-2 text-destructive py-4">
                     <AlertCircle className="h-5 w-5" />
                     <span>{treeError}</span>
-                    <Button variant="outline" size="sm" onClick={fetchTree} className="ml-auto">
+                    <Button variant="outline" size="sm" onClick={() => fetchTree()} className="ml-auto">
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Повторить
                     </Button>
